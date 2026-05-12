@@ -143,17 +143,17 @@ input[type=file] { display: none; }
   <div class="sidebar">
     <div class="sidebar-section">
       <div class="sidebar-label">主選單</div>
-      <div class="nav-item active" onclick="showPage('home',this)"><span class="icon">🏠</span> 首頁總覽</div>
+      <div class="nav-item active" onclick="showPage('home')"><span class="icon">🏠</span> 首頁總覽</div>
     </div>
     <div class="sidebar-section">
       <div class="sidebar-label">財務工具</div>
-      <div class="nav-item" id="nav-chb" onclick="showPage('chb',this)"><span class="icon">🏦</span> CHB 對帳填寫 <span class="badge">核心</span></div>
+      <div class="nav-item" id="nav-chb" onclick="showPage('chb')"><span class="icon">🏦</span> CHB 對帳填寫 <span class="badge">核心</span></div>
     </div>
     <hr class="sidebar-divider">
     <div class="sidebar-section">
       <div class="sidebar-label">行政管理</div>
-      <div class="nav-item" id="nav-calendar" onclick="showPage('calendar',this)"><span class="icon">📅</span> 行事曆</div>
-      <div class="nav-item" id="nav-docs" onclick="showPage('docs',this)"><span class="icon">📁</span> 文件管理</div>
+      <div class="nav-item" id="nav-calendar" onclick="showPage('calendar')"><span class="icon">📅</span> 行事曆</div>
+      <div class="nav-item" id="nav-docs" onclick="showPage('docs')"><span class="icon">📁</span> 文件管理</div>
     </div>
   </div>
 
@@ -186,19 +186,19 @@ input[type=file] { display: none; }
       <div class="card">
         <div class="card-title"><span class="dot"></span> 快速工具</div>
         <div class="tools-grid">
-          <div class="tool-card" onclick="showPage('chb',document.getElementById('nav-chb'))">
+          <div class="tool-card" onclick="showPage('chb')">
             <div class="tool-icon">🏦</div>
             <div class="tool-name">CHB 對帳填寫</div>
             <div class="tool-desc">上傳 CHB*.xlsx，自動比對後台發票、填入採購單號與憑證號碼</div>
             <span class="tool-badge">核心功能</span>
           </div>
-          <div class="tool-card" onclick="showPage('calendar',document.getElementById('nav-calendar'))">
+          <div class="tool-card" onclick="showPage('calendar')">
             <div class="tool-icon">📅</div>
             <div class="tool-name">行事曆 / 待辦</div>
             <div class="tool-desc">財務行政相關事項提醒與排程管理</div>
             <span class="tool-badge green">即將開放</span>
           </div>
-          <div class="tool-card" onclick="showPage('docs',document.getElementById('nav-docs'))">
+          <div class="tool-card" onclick="showPage('docs')">
             <div class="tool-icon">📁</div>
             <div class="tool-name">文件管理</div>
             <div class="tool-desc">發票、報表、合約文件快速存取</div>
@@ -294,11 +294,13 @@ function updateClock() {
 setInterval(updateClock, 1000); updateClock();
 
 // ── 頁面切換 ──────────────────────────────────────────────────────
-function showPage(id, navEl) {
+function showPage(id) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  document.getElementById('page-'+id).classList.add('active');
-  if (navEl) navEl.classList.add('active');
+  const page = document.getElementById('page-'+id);
+  if(page) page.classList.add('active');
+  const nav = document.getElementById('nav-'+id);
+  if(nav) nav.classList.add('active');
 }
 
 // ── 拖曳上傳 ──────────────────────────────────────────────────────
@@ -493,4 +495,5 @@ async function runReconcile(){
     }
     const newWb=XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(newWb,XLSX.utils.aoa_to_sheet(outData),chbSN);
-    XLSX
+    XLSX.utils.book_append_sheet(newWb,wb.Sheets[htSN],htSN);
+    outpu
