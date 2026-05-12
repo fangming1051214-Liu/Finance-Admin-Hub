@@ -280,6 +280,12 @@ input[type=file] { display: none; }
 </div><!-- /.layout -->
 
 <script>
+// ── 全域錯誤捕捉 ──────────────────────────────────────────────────
+window.onerror = function(msg, src, line) {
+  document.body.insertAdjacentHTML('afterbegin',
+    '<div style="position:fixed;top:0;left:0;right:0;background:#e74c3c;color:#fff;padding:10px;z-index:9999;font-size:13px;">⚠️ JS錯誤：'+msg+' (第'+line+'行)</div>');
+  return false;
+};
 // ── 時鐘 ──────────────────────────────────────────────────────────
 function updateClock() {
   const now = new Date();
@@ -485,15 +491,4 @@ async function runReconcile(){
       if(!outData[ri]) outData[ri]=[];
       while(outData[ri].length<=cTotal) outData[ri].push(null);
       if(res){
-        if(res.po)    outData[ri][cD]=res.po;
-        if(res.inv)   outData[ri][cE]=res.inv;
-        if(res.fee)   outData[ri][cH]=-Math.abs(res.fee);
-        if(res.ym)    outData[ri][cI]=res.ym;
-        if(res.conds) outData[ri][cCond]=res.conds;
-        outData[ri][cTotal]=res.total;
-      }
-    }
-    const newWb=XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(newWb,XLSX.utils.aoa_to_sheet(outData),chbSN);
-    XLSX.utils.book_append_sheet(newWb,wb.Sheets[htSN],htSN);
-    outpu
+        if(res.po)    
