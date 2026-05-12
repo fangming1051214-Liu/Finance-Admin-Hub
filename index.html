@@ -417,12 +417,33 @@ async function runReconcile(){
       }
     }
     const dataStart=headerRowIdx+1;
+    // ── 用資料內容自動找民國日期欄（7位數字，範圍 1000101~1200101）──
+    let cDateFromData=-1;
+    for(let i=0;i<Math.min(30,chbData.length-dataStart);i++){
+      const row=chbData[dataStart+i]; if(!row) continue;
+      for(let j=0;j<row.length;j++){
+        const v=String(row[j]||'').trim().replace(/,/g,'');
+        if(/^\d{7}$/.test(v)){const n=parseInt(v);if(n>=1000101&&n<=1200101){cDateFromData=j;break;}}
+      }
+      if(cDateFromData!==-1) break;
+    }
+    if(cDateFromData!==-1) cDate=cDateFromData;
+    // ── 用資料內容自動找廠商欄（含中文字、長度>1、非純數字）──
+    // 以支出欄有值的列為基準，找最可能是廠商名的欄
+    let cVendorFromData=-1;
+    for(let i=0;i<Math.min(30,chbData.length-dataStart);i++){
+      const row=chbData[dataStart+i]; if(!row) continue;
+      const rawAmt2=row[cAmt]; const amt2=parseFloat(String(rawAmt2||'').replace(/,/g,''));
+      if(isNaN(amt2)||amt2<=0) continue;
+      for(let j=0;j<row.length;j++){
+        const v=String(row[j]||'').trim();
+        if(v.length>=2&&/[一-鿿]/.test(v)&&!/^\d+$/.test(v)&&j!==cDate){cVendorFromData=j;break;}
+      }
+      if(cVendorFromData!==-1) break;
+    }
+    if(cVendorFromData!==-1) cVendor=cVendorFromData;
     setP(50,'比對中...'); await sleep(50);
     const chbRows=chbData.slice(dataStart); const results=[]; let matched=0,expense=0;
-    // 診斷：檢查前5筆資料的支出欄位值
-    const diagSamples=chbRows.slice(0,8).map(r=>r?String(r[cAmt]??'(空)'):'-').join(' | ');
-    console.log(`偵測到標題列:第${headerRowIdx+1}列 | 支出欄:第${cAmt+1}欄 | 日期欄:第${cDate+1}欄 | 廠商欄:第${cVendor+1}欄`);
-    console.log(`前8筆支出欄樣本: ${diagSamples}`);
     for(let i=0;i<chbRows.length;i++){
       const row=chbRows[i]; if(!row){results.push(null);continue;}
       const rawAmt=row[cAmt];
@@ -467,7 +488,9 @@ async function runReconcile(){
       <div class="rs"><div class="rs-num" style="color:var(--accent3)">${expense-matched}</div><div class="rs-lbl">留空</div></div>
       <div style="width:100%;margin-top:10px;padding:8px 10px;background:var(--panel2);border-radius:8px;font-size:11px;color:var(--muted);">
         📋 偵測：標題第${headerRowIdx+1}列 ｜ 支出第${cAmt+1}欄 ｜ 日期第${cDate+1}欄 ｜ 廠商第${cVendor+1}欄<br>
-        🔍 支出欄前5筆：${diagSamplesDisplay}
+        🔍 支出欄前5筆：${diagSamplesDisplay}<br>
+        📅 日期欄前3筆：${chbRows.slice(0,5).filter(r=>r&&r[cAmt]&&parseFloat(String(r[cAmt]).replace(/,/g,''))>0).slice(0,3).map(r=>`「${String(r[cDate]??'空')}」`).join(' ')}<br>
+        🏪 廠商欄前3筆：${chbRows.slice(0,5).filter(r=>r&&r[cAmt]&&parseFloat(String(r[cAmt]).replace(/,/g,''))>0).slice(0,3).map(r=>`「${String(r[cVendor]??'空')}」`).join(' ')}
       </div>`;
     document.getElementById('dlBtn').style.display='block';
     // 更新首頁統計
