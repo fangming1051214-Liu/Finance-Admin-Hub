@@ -357,8 +357,18 @@ function buildRes(rows,fee){
   return { inv:inv.join('、'), po:po.join('、'), conds:[...conds].join('、'), ym:yms.join('、'), fee:fee>0?fee:'', total:rows.reduce((s,r)=>s+(isNaN(r.amt)?0:Number(r.amt)),0) };
 }
 function addDays(w,d){ const[y,m,day]=w.split('/').map(Number),dt=new Date(y,m-1,day+d); return`${dt.getFullYear()}/${String(dt.getMonth()+1).padStart(2,'0')}/${String(dt.getDate()).padStart(2,'0')}`; }
+function dateToWest(dateInput){
+  if(!dateInput) return null;
+  // 若已是 Date 物件（SheetJS cellDates 解析後）
+  if(dateInput instanceof Date){
+    const d=dateInput; if(isNaN(d.getTime())) return null;
+    return `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`;
+  }
+  // 若是民國7位數字字串或數字
+  return rocToWest(dateInput);
+}
 function findMatch(vendor,dateRoc,amount,grp){
-  if(!amount||!dateRoc)return null; const west=rocToWest(dateRoc); if(!west)return null;
+  if(!amount||!dateRoc)return null; const west=dateToWest(dateRoc); if(!west)return null;
   for(const[[hn,hd],rows]of grp){ if(hd===west&&nameMatch(vendor,hn)){const r=tryMatch(rows,amount);if(r)return buildRes(...r);} }
   for(const delta of[1,-1,2,-2]){ const alt=addDays(west,delta); for(const[[hn,hd],rows]of grp){ if(hd===alt&&nameMatch(vendor,hn)){const r=tryMatch(rows,amount);if(r)return buildRes(...r);} } }
   const month=west.slice(0,7),cands=[];
@@ -417,13 +427,21 @@ async function runReconcile(){
       }
     }
     const dataStart=headerRowIdx+1;
-    // ── 用資料內容自動找民國日期欄（7位數字，範圍 1000101~1200101）──
+    // ── 用資料內容自動找日期欄（民國7位數字 或 Date物件）──
     let cDateFromData=-1;
     for(let i=0;i<Math.min(30,chbData.length-dataStart);i++){
       const row=chbData[dataStart+i]; if(!row) continue;
       for(let j=0;j<row.length;j++){
-        const v=String(row[j]||'').trim().replace(/,/g,'');
-        if(/^\d{7}$/.test(v)){const n=parseInt(v);if(n>=1000101&&n<=1200101){cDateFromData=j;break;}}
+        const v=row[j];
+        // 民國7位數字
+        if(v!=null&&!(v instanceof Date)){
+          const s=String(v).trim().replace(/,/g,'');
+          if(/^\d{7}$/.test(s)){const n=parseInt(s);if(n>=1000101&&n<=1200101){cDateFromData=j;break;}}
+        }
+        // Excel Date 物件（西曆）
+        if(v instanceof Date&&!isNaN(v.getTime())&&v.getFullYear()>=2000&&v.getFullYear()<=2100){
+          cDateFromData=j; break;
+        }
       }
       if(cDateFromData!==-1) break;
     }
@@ -475,56 +493,4 @@ async function runReconcile(){
     }
     const newWb=XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(newWb,XLSX.utils.aoa_to_sheet(outData),chbSN);
-    XLSX.utils.book_append_sheet(newWb,wb.Sheets[htSN],htSN);
-    outputData=XLSX.write(newWb,{bookType:'xlsx',type:'array'});
-    setP(100,'完成！'); await sleep(200);
-    document.getElementById('progWrap').style.display='none';
-    const rb=document.getElementById('resultBox'); rb.className='result-box ok'; rb.style.display='block';
-    document.getElementById('resultTitle').textContent='✅ 比對完成！';
-    const diagSamplesDisplay=chbRows.slice(0,5).map((r,i)=>r?`第${i+1}筆:「${String(r[cAmt]??'空')}」`:'').filter(Boolean).join('　');
-    document.getElementById('resultStats').innerHTML=`
-      <div class="rs"><div class="rs-num" style="color:var(--accent)">${expense}</div><div class="rs-lbl">總支出</div></div>
-      <div class="rs"><div class="rs-num" style="color:var(--accent2)">${matched}</div><div class="rs-lbl">成功比對</div></div>
-      <div class="rs"><div class="rs-num" style="color:var(--accent3)">${expense-matched}</div><div class="rs-lbl">留空</div></div>
-      <div style="width:100%;margin-top:10px;padding:8px 10px;background:var(--panel2);border-radius:8px;font-size:11px;color:var(--muted);">
-        📋 偵測：標題第${headerRowIdx+1}列 ｜ 支出第${cAmt+1}欄 ｜ 日期第${cDate+1}欄 ｜ 廠商第${cVendor+1}欄<br>
-        🔍 支出欄前5筆：${diagSamplesDisplay}<br>
-        📅 日期欄前3筆：${chbRows.slice(0,5).filter(r=>r&&r[cAmt]&&parseFloat(String(r[cAmt]).replace(/,/g,''))>0).slice(0,3).map(r=>`「${String(r[cDate]??'空')}」`).join(' ')}<br>
-        🏪 廠商欄前3筆：${chbRows.slice(0,5).filter(r=>r&&r[cAmt]&&parseFloat(String(r[cAmt]).replace(/,/g,''))>0).slice(0,3).map(r=>`「${String(r[cVendor]??'空')}」`).join(' ')}
-      </div>`;
-    document.getElementById('dlBtn').style.display='block';
-    // 更新首頁統計
-    const now=new Date();
-    document.getElementById('lastRun').textContent=`${now.getMonth()+1}/${now.getDate()}`;
-    document.getElementById('lastRunDetail').textContent=`${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')} 對帳完成`;
-    document.getElementById('lastMatched').textContent=matched;
-    document.getElementById('lastUnmatched').textContent=expense-matched;
-    addActivity('blue',`CHB 對帳完成：${matched}/${expense} 筆`);
-  }catch(err){
-    document.getElementById('progWrap').style.display='none';
-    const rb=document.getElementById('resultBox'); rb.className='result-box err'; rb.style.display='block';
-    document.getElementById('resultTitle').textContent='❌ 錯誤：'+err.message;
-    document.getElementById('resultStats').innerHTML='';
-    console.error(err);
-  }
-  document.getElementById('runBtn').disabled=false;
-}
-
-function downloadResult(){
-  if(!outputData)return;
-  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([outputData],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}));
-  a.download='CHB_比對完成.xlsx'; a.click();
-}
-
-function addActivity(color, text){
-  const list=document.getElementById('activityList');
-  const now=new Date();
-  const time=`${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
-  const item=document.createElement('div'); item.className='activity-item';
-  item.innerHTML=`<span class="activity-dot ${color}"></span><span>${text}</span><span class="activity-time">${time}</span>`;
-  if(list.children[0]&&list.children[0].style.justifyContent==='center') list.innerHTML='';
-  list.insertBefore(item,list.firstChild);
-}
-</script>
-</body>
-</html>
+    XLSX.utils.book_append_sheet(ne
