@@ -123,6 +123,8 @@ input[type=file] { display: none; }
 .activity-dot.green { background: var(--accent2); }
 .activity-dot.orange { background: var(--accent3); }
 .activity-time { color: var(--muted); font-size: 11px; margin-left: auto; white-space: nowrap; }
+a.nav-item, a.tool-card { color: inherit; text-decoration: none; display: flex; }
+a.nav-item { align-items: center; }
 </style>
 </head>
 <body>
@@ -143,17 +145,17 @@ input[type=file] { display: none; }
   <div class="sidebar">
     <div class="sidebar-section">
       <div class="sidebar-label">主選單</div>
-      <div class="nav-item active" id="nav-home" data-page="home"><span class="icon">🏠</span> 首頁總覽</div>
+      <a class="nav-item active" id="nav-home" href="#home"><span class="icon">🏠</span> 首頁總覽</a>
     </div>
     <div class="sidebar-section">
       <div class="sidebar-label">財務工具</div>
-      <div class="nav-item" id="nav-chb" data-page="chb"><span class="icon">🏦</span> CHB 對帳填寫 <span class="badge">核心</span></div>
+      <a class="nav-item" id="nav-chb" href="#chb"><span class="icon">🏦</span> CHB 對帳填寫 <span class="badge">核心</span></a>
     </div>
     <hr class="sidebar-divider">
     <div class="sidebar-section">
       <div class="sidebar-label">行政管理</div>
-      <div class="nav-item" id="nav-calendar" data-page="calendar"><span class="icon">📅</span> 行事曆</div>
-      <div class="nav-item" id="nav-docs" data-page="docs"><span class="icon">📁</span> 文件管理</div>
+      <a class="nav-item" id="nav-calendar" href="#calendar"><span class="icon">📅</span> 行事曆</a>
+      <a class="nav-item" id="nav-docs" href="#docs"><span class="icon">📁</span> 文件管理</a>
     </div>
   </div>
 
@@ -186,24 +188,24 @@ input[type=file] { display: none; }
       <div class="card">
         <div class="card-title"><span class="dot"></span> 快速工具</div>
         <div class="tools-grid">
-          <div class="tool-card" data-page="chb">
+          <a class="tool-card" href="#chb" style="text-decoration:none;">
             <div class="tool-icon">🏦</div>
             <div class="tool-name">CHB 對帳填寫</div>
             <div class="tool-desc">上傳 CHB*.xlsx，自動比對後台發票、填入採購單號與憑證號碼</div>
             <span class="tool-badge">核心功能</span>
-          </div>
-          <div class="tool-card" data-page="calendar">
+          </a>
+          <a class="tool-card" href="#calendar" style="text-decoration:none;">
             <div class="tool-icon">📅</div>
             <div class="tool-name">行事曆 / 待辦</div>
             <div class="tool-desc">財務行政相關事項提醒與排程管理</div>
             <span class="tool-badge green">即將開放</span>
-          </div>
-          <div class="tool-card" data-page="docs">
+          </a>
+          <a class="tool-card" href="#docs" style="text-decoration:none;">
             <div class="tool-icon">📁</div>
             <div class="tool-name">文件管理</div>
             <div class="tool-desc">發票、報表、合約文件快速存取</div>
             <span class="tool-badge green">即將開放</span>
-          </div>
+          </a>
         </div>
       </div>
 
@@ -308,10 +310,13 @@ function showPage(id) {
   const nav = document.getElementById('nav-'+id);
   if(nav) nav.classList.add('active');
 }
-// 用 addEventListener 綁定
-document.querySelectorAll('[data-page]').forEach(function(el) {
-  el.addEventListener('click', function() { showPage(el.getAttribute('data-page')); });
-});
+// 用 hash 導覽
+function handleHash() {
+  var id = (window.location.hash || '#home').replace('#','') || 'home';
+  showPage(id);
+}
+window.addEventListener('hashchange', handleHash);
+handleHash();
 
 // ── 拖曳上傳 ──────────────────────────────────────────────────────
 let selectedFile = null, outputData = null;
@@ -489,7 +494,4 @@ async function runReconcile(){
     const maxCol=Math.max(cD,cE,cH,cI,9)+2;
     while((outData[headerRowIdx]||[]).length<maxCol) (outData[headerRowIdx]=outData[headerRowIdx]||[]).push(null);
     const cCond=Math.max(cI,9)+1, cTotal=Math.max(cI,9)+2;
-    outData[headerRowIdx][cCond]='付款條件'; outData[headerRowIdx][cTotal]='發票加總金額';
-    for(let i=0;i<chbRows.length;i++){
-      const res=results[i],ri=i+dataStart;
-      if(
+    outData[headerRowIdx][cCo
