@@ -396,29 +396,60 @@ async function runReconcile(){
     const grpMap=new Map();
     for(const r of htRows){ const k=JSON.stringify([r.hc,r.hd]); if(!grpMap.has(k))grpMap.set(k,[]); grpMap.get(k).push(r); }
     const grp=[...grpMap.entries()].map(([k,v])=>[JSON.parse(k),v]);
+    // ── 自動偵測 CHB 欄位 ──────────────────────────────────────────
+    let headerRowIdx=1, cAmt=5, cDate=1, cVendor=2, cD=3, cE=4, cH=7, cI=8;
+    for(let i=0;i<Math.min(6,chbData.length);i++){
+      const row=chbData[i]; if(!row) continue;
+      const joined=row.map(c=>String(c||'')).join('');
+      if(joined.includes('支出')||joined.includes('借方')||(joined.includes('日期')&&joined.includes('金額'))){
+        headerRowIdx=i;
+        row.forEach((cell,idx)=>{
+          const c=String(cell||'');
+          if(c.includes('支出')||c.includes('借方')) cAmt=idx;
+          if((c.includes('日期')||c.includes('起息'))&&idx>0&&cDate===1) cDate=idx;
+          if(c.includes('廠商')||c.includes('說明')||c.includes('摘要')||c.includes('備註')) cVendor=idx;
+          if(c.includes('採購單')) cD=idx;
+          if(c.includes('憑證號碼')||c.includes('發票號')) cE=idx;
+          if(c.includes('手續費')||c.includes('匯費')) cH=idx;
+          if(c.includes('憑證日期')) cI=idx;
+        });
+        break;
+      }
+    }
+    const dataStart=headerRowIdx+1;
     setP(50,'比對中...'); await sleep(50);
-    const chbRows=chbData.slice(2); const results=[]; let matched=0,expense=0;
+    const chbRows=chbData.slice(dataStart); const results=[]; let matched=0,expense=0;
+    // 診斷：檢查前5筆資料的支出欄位值
+    const diagSamples=chbRows.slice(0,8).map(r=>r?String(r[cAmt]??'(空)'):'-').join(' | ');
+    console.log(`偵測到標題列:第${headerRowIdx+1}列 | 支出欄:第${cAmt+1}欄 | 日期欄:第${cDate+1}欄 | 廠商欄:第${cVendor+1}欄`);
+    console.log(`前8筆支出欄樣本: ${diagSamples}`);
     for(let i=0;i<chbRows.length;i++){
-      const row=chbRows[i]; const amount=parseFloat(row[5]);
-      if(!isNaN(amount)&&amount>0){ expense++; const res=findMatch(row[2],row[1],amount,grp); results.push(res); if(res)matched++; }
+      const row=chbRows[i]; if(!row){results.push(null);continue;}
+      const rawAmt=row[cAmt];
+      const amount=parseFloat(String(rawAmt||'').replace(/,/g,'').replace(/－/g,'-'));
+      // 支援正值支出 或 負值支出（部分銀行格式）
+      const absAmt=Math.abs(amount);
+      if(!isNaN(amount)&&absAmt>0){ expense++; const res=findMatch(row[cVendor],row[cDate],absAmt,grp); results.push(res); if(res)matched++; }
       else results.push(null);
       if(i%20===0){setP(50+Math.round(40*i/chbRows.length),`比對中... ${i+1}/${chbRows.length}`);await sleep(0);}
     }
     setP(92,'寫入結果...'); await sleep(50);
     const outData=chbData.map(r=>[...(r||[])]);
-    while((outData[1]||[]).length<9) outData[1].push(null);
-    outData[1][9]='付款條件'; outData[1][10]='發票加總金額';
+    const maxCol=Math.max(cD,cE,cH,cI,9)+2;
+    while((outData[headerRowIdx]||[]).length<maxCol) (outData[headerRowIdx]=outData[headerRowIdx]||[]).push(null);
+    const cCond=Math.max(cI,9)+1, cTotal=Math.max(cI,9)+2;
+    outData[headerRowIdx][cCond]='付款條件'; outData[headerRowIdx][cTotal]='發票加總金額';
     for(let i=0;i<chbRows.length;i++){
-      const res=results[i],ri=i+2;
+      const res=results[i],ri=i+dataStart;
       if(!outData[ri]) outData[ri]=[];
-      while(outData[ri].length<11) outData[ri].push(null);
+      while(outData[ri].length<=cTotal) outData[ri].push(null);
       if(res){
-        if(res.po)    outData[ri][3]=res.po;
-        if(res.inv)   outData[ri][4]=res.inv;
-        if(res.fee)   outData[ri][7]=-Math.abs(res.fee);
-        if(res.ym)    outData[ri][8]=res.ym;
-        if(res.conds) outData[ri][9]=res.conds;
-        outData[ri][10]=res.total;
+        if(res.po)    outData[ri][cD]=res.po;
+        if(res.inv)   outData[ri][cE]=res.inv;
+        if(res.fee)   outData[ri][cH]=-Math.abs(res.fee);
+        if(res.ym)    outData[ri][cI]=res.ym;
+        if(res.conds) outData[ri][cCond]=res.conds;
+        outData[ri][cTotal]=res.total;
       }
     }
     const newWb=XLSX.utils.book_new();
@@ -429,10 +460,15 @@ async function runReconcile(){
     document.getElementById('progWrap').style.display='none';
     const rb=document.getElementById('resultBox'); rb.className='result-box ok'; rb.style.display='block';
     document.getElementById('resultTitle').textContent='✅ 比對完成！';
+    const diagSamplesDisplay=chbRows.slice(0,5).map((r,i)=>r?`第${i+1}筆:「${String(r[cAmt]??'空')}」`:'').filter(Boolean).join('　');
     document.getElementById('resultStats').innerHTML=`
       <div class="rs"><div class="rs-num" style="color:var(--accent)">${expense}</div><div class="rs-lbl">總支出</div></div>
       <div class="rs"><div class="rs-num" style="color:var(--accent2)">${matched}</div><div class="rs-lbl">成功比對</div></div>
-      <div class="rs"><div class="rs-num" style="color:var(--accent3)">${expense-matched}</div><div class="rs-lbl">留空</div></div>`;
+      <div class="rs"><div class="rs-num" style="color:var(--accent3)">${expense-matched}</div><div class="rs-lbl">留空</div></div>
+      <div style="width:100%;margin-top:10px;padding:8px 10px;background:var(--panel2);border-radius:8px;font-size:11px;color:var(--muted);">
+        📋 偵測：標題第${headerRowIdx+1}列 ｜ 支出第${cAmt+1}欄 ｜ 日期第${cDate+1}欄 ｜ 廠商第${cVendor+1}欄<br>
+        🔍 支出欄前5筆：${diagSamplesDisplay}
+      </div>`;
     document.getElementById('dlBtn').style.display='block';
     // 更新首頁統計
     const now=new Date();
