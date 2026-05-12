@@ -308,11 +308,9 @@ function showPage(id) {
   const nav = document.getElementById('nav-'+id);
   if(nav) nav.classList.add('active');
 }
-// 用 addEventListener 綁定，避免 onclick 屬性問題
-document.addEventListener('DOMContentLoaded', function() {
-  document.querySelectorAll('[data-page]').forEach(el => {
-    el.addEventListener('click', function() { showPage(this.getAttribute('data-page')); });
-  });
+// 用 addEventListener 綁定
+document.querySelectorAll('[data-page]').forEach(function(el) {
+  el.addEventListener('click', function() { showPage(el.getAttribute('data-page')); });
 });
 
 // ── 拖曳上傳 ──────────────────────────────────────────────────────
@@ -491,4 +489,7 @@ async function runReconcile(){
     const maxCol=Math.max(cD,cE,cH,cI,9)+2;
     while((outData[headerRowIdx]||[]).length<maxCol) (outData[headerRowIdx]=outData[headerRowIdx]||[]).push(null);
     const cCond=Math.max(cI,9)+1, cTotal=Math.max(cI,9)+2;
-    outData[headerRowIdx][cCond]='付款條件'; outData[headerRowIdx][cTotal]='發票加總金額
+    outData[headerRowIdx][cCond]='付款條件'; outData[headerRowIdx][cTotal]='發票加總金額';
+    for(let i=0;i<chbRows.length;i++){
+      const res=results[i],ri=i+dataStart;
+      if(
