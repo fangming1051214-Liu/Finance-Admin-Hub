@@ -263,5 +263,44 @@ a.nav-item { align-items: center; }
 </div>
 
 <script src="app.js"></script>
+
+<!-- 密碼保護 -->
+<div id="pwOverlay" style="display:none;position:fixed;inset:0;background:#0f1623;z-index:99999;display:flex;align-items:center;justify-content:center;">
+  <div style="background:#1a2235;border:1px solid #2a3a55;border-radius:16px;padding:40px 36px;width:360px;text-align:center;">
+    <div style="font-size:36px;margin-bottom:12px;">🔒</div>
+    <div style="font-size:18px;font-weight:bold;color:#e8edf5;margin-bottom:6px;">財務行政儀表板</div>
+    <div style="font-size:13px;color:#8899aa;margin-bottom:24px;">請輸入密碼以繼續</div>
+    <input id="pwInput" type="password" placeholder="輸入密碼"
+      style="width:100%;padding:11px 14px;background:#212d42;border:1px solid #2a3a55;border-radius:8px;color:#e8edf5;font-size:15px;font-family:inherit;outline:none;margin-bottom:12px;"
+      onkeydown="if(event.key==='Enter')checkPw()">
+    <div id="pwError" style="color:#e74c3c;font-size:13px;margin-bottom:10px;display:none;">密碼錯誤，請重新輸入</div>
+    <button onclick="checkPw()"
+      style="width:100%;padding:12px;background:#4a7fd4;color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:bold;cursor:pointer;font-family:inherit;">進入</button>
+  </div>
+</div>
+<script>
+(function(){
+  var HASH = '8a67d92fc49880d2cda32940deabc0244d7884fe7b1ffaa82d300cf0cfe72b24';
+  var KEY = 'fah_auth';
+  var overlay = document.getElementById('pwOverlay');
+  if(sessionStorage.getItem(KEY) === HASH){ overlay.style.display='none'; return; }
+  overlay.style.display='flex';
+  document.body.style.overflow='hidden';
+  window.checkPw = async function(){
+    var val = document.getElementById('pwInput').value;
+    var buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(val));
+    var hex = Array.from(new Uint8Array(buf)).map(function(b){return b.toString(16).padStart(2,'0');}).join('');
+    if(hex === HASH){
+      sessionStorage.setItem(KEY, HASH);
+      overlay.style.display='none';
+      document.body.style.overflow='';
+    } else {
+      document.getElementById('pwError').style.display='block';
+      document.getElementById('pwInput').value='';
+      document.getElementById('pwInput').focus();
+    }
+  };
+})();
+</script>
 </body>
 </html>
