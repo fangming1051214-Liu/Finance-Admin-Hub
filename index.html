@@ -141,7 +141,7 @@ a.nav-item { align-items: center; }
     </div>
     <div class="sidebar-section">
       <div class="sidebar-label">財務工具</div>
-      <a class="nav-item" id="nav-chb" href="#page-chb"><span class="icon">🏦</span> CHB 對帳填寫 <span class="badge">核心</span></a>
+      <a class="nav-item" id="nav-chb" href="#" onclick="event.preventDefault();showChbPage()"><span class="icon">🏦</span> CHB 對帳填寫 <span class="badge">核心</span></a>
     </div>
     <hr class="sidebar-divider">
     <div class="sidebar-section">
@@ -176,7 +176,7 @@ a.nav-item { align-items: center; }
       <div class="card">
         <div class="card-title"><span class="dot"></span> 快速工具</div>
         <div class="tools-grid">
-          <a class="tool-card" href="#page-chb" style="text-decoration:none;">
+          <a class="tool-card" href="#" onclick="event.preventDefault();showChbPage()" style="text-decoration:none;">
             <div class="tool-icon">🏦</div>
             <div class="tool-name">CHB 對帳填寫</div>
             <div class="tool-desc">上傳 CHB*.xlsx，自動比對後台發票、填入採購單號與憑證號碼</div>
@@ -264,36 +264,54 @@ a.nav-item { align-items: center; }
 
 <script src="app.js"></script>
 
-<!-- 密碼保護 -->
-<div id="pwOverlay" style="display:none;position:fixed;inset:0;background:#0f1623;z-index:99999;display:flex;align-items:center;justify-content:center;">
+<!-- CHB 密碼保護 -->
+<div id="pwOverlay" style="position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:99999;display:none;align-items:center;justify-content:center;">
   <div style="background:#1a2235;border:1px solid #2a3a55;border-radius:16px;padding:40px 36px;width:360px;text-align:center;">
     <div style="font-size:36px;margin-bottom:12px;">🔒</div>
-    <div style="font-size:18px;font-weight:bold;color:#e8edf5;margin-bottom:6px;">財務行政儀表板</div>
-    <div style="font-size:13px;color:#8899aa;margin-bottom:24px;">請輸入密碼以繼續</div>
+    <div style="font-size:18px;font-weight:bold;color:#e8edf5;margin-bottom:6px;">CHB 彰銀對帳工具</div>
+    <div style="font-size:13px;color:#8899aa;margin-bottom:24px;">此工具需要密碼才能使用</div>
     <input id="pwInput" type="password" placeholder="輸入密碼"
       style="width:100%;padding:11px 14px;background:#212d42;border:1px solid #2a3a55;border-radius:8px;color:#e8edf5;font-size:15px;font-family:inherit;outline:none;margin-bottom:12px;"
       onkeydown="if(event.key==='Enter')checkPw()">
     <div id="pwError" style="color:#e74c3c;font-size:13px;margin-bottom:10px;display:none;">密碼錯誤，請重新輸入</div>
     <button onclick="checkPw()"
-      style="width:100%;padding:12px;background:#4a7fd4;color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:bold;cursor:pointer;font-family:inherit;">進入</button>
+      style="width:100%;padding:12px;background:#4a7fd4;color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:bold;cursor:pointer;font-family:inherit;">確認</button>
+    <button onclick="cancelPw()"
+      style="width:100%;padding:10px;margin-top:8px;background:transparent;color:#8899aa;border:1px solid #2a3a55;border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit;">取消</button>
   </div>
 </div>
 <script>
 (function(){
   var HASH = '8a67d92fc49880d2cda32940deabc0244d7884fe7b1ffaa82d300cf0cfe72b24';
-  var KEY = 'fah_auth';
-  var overlay = document.getElementById('pwOverlay');
-  if(sessionStorage.getItem(KEY) === HASH){ overlay.style.display='none'; return; }
-  overlay.style.display='flex';
-  document.body.style.overflow='hidden';
+  var KEY = 'chb_auth';
+
+  window.showChbPage = function(){
+    if(sessionStorage.getItem(KEY) === HASH){
+      // 已驗證，直接顯示 CHB 頁面
+      document.getElementById('pwOverlay').style.display='none';
+      window.location.hash = '#page-chb';
+    } else {
+      // 未驗證，顯示密碼框
+      document.getElementById('pwOverlay').style.display='flex';
+      document.getElementById('pwInput').value='';
+      document.getElementById('pwError').style.display='none';
+      setTimeout(function(){ document.getElementById('pwInput').focus(); }, 100);
+    }
+  };
+
+  window.cancelPw = function(){
+    document.getElementById('pwOverlay').style.display='none';
+    window.location.hash = '#page-home';
+  };
+
   window.checkPw = async function(){
     var val = document.getElementById('pwInput').value;
     var buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(val));
     var hex = Array.from(new Uint8Array(buf)).map(function(b){return b.toString(16).padStart(2,'0');}).join('');
     if(hex === HASH){
       sessionStorage.setItem(KEY, HASH);
-      overlay.style.display='none';
-      document.body.style.overflow='';
+      document.getElementById('pwOverlay').style.display='none';
+      window.location.hash = '#page-chb';
     } else {
       document.getElementById('pwError').style.display='block';
       document.getElementById('pwInput').value='';
