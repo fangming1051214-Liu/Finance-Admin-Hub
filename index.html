@@ -232,7 +232,7 @@ a.nav-item { align-items: center; }
           <div class="dz-icon">📂</div>
           <p>點擊或拖曳 <span>CHB*.xlsx</span> 到這裡</p>
           <p style="font-size:12px;margin-top:6px;opacity:0.6">需包含 CHB 和 後台 兩個工作表</p>
-          <input type="file" id="fileInput" accept=".xlsx">
+          <input type="file" id="fileInput" accept=".xlsx" onchange="if(this.files[0]){selectedFile=this.files[0];document.getElementById('fileName').textContent=this.files[0].name;document.getElementById('fileTag').style.display='block';document.getElementById('runBtn').disabled=false;document.getElementById('resultBox').style.display='none';outputData=null;}">
         </div>
         <div class="file-tag" id="fileTag">📄 <span id="fileName"></span></div>
         <button class="btn-run" id="runBtn" disabled onclick="runReconcile()">▶ 開始比對</button>
@@ -489,10 +489,4 @@ async function runReconcile(){
       const amount=parseFloat(String(rawAmt||'').replace(/,/g,'').replace(/－/g,'-'));
       // 支援正值支出 或 負值支出（部分銀行格式）
       const absAmt=Math.abs(amount);
-      if(!isNaN(amount)&&absAmt>0){ expense++; const res=findMatch(row[cVendor],row[cDate],absAmt,grp); results.push(res); if(res)matched++; }
-      else results.push(null);
-      if(i%20===0){setP(50+Math.round(40*i/chbRows.length),`比對中... ${i+1}/${chbRows.length}`);await sleep(0);}
-    }
-    setP(92,'寫入結果...'); await sleep(50);
-    const outData=chbData.map(r=>[...(r||[])]);
-    const maxCol=Math.max(cD,cE,cH,cI,9)
+      if(!isNaN(amount)&&absAmt>0){ expense++; const res=findMatch(row[cVendor],row[cDate],absAmt,grp); results.push(res); if(res
