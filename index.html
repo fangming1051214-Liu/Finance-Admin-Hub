@@ -5,30 +5,21 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>財務行政儀表板</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
 <style>
 :root {
-  --bg: #0f1623;
-  --panel: #1a2235;
-  --panel2: #212d42;
-  --border: #2a3a55;
-  --accent: #4a7fd4;
-  --accent2: #2ecc71;
-  --accent3: #e67e22;
-  --text: #e8edf5;
-  --muted: #8899aa;
-  --red: #e74c3c;
+  --bg: #0f1623; --panel: #1a2235; --panel2: #212d42; --border: #2a3a55;
+  --accent: #4a7fd4; --accent2: #2ecc71; --accent3: #e67e22;
+  --text: #e8edf5; --muted: #8899aa; --red: #e74c3c;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { background: var(--bg); color: var(--text); font-family: 'Microsoft JhengHei', Arial, sans-serif; min-height: 100vh; }
-
 .header { background: var(--panel); border-bottom: 1px solid var(--border); padding: 14px 28px; display: flex; align-items: center; justify-content: space-between; }
 .header-logo { font-size: 18px; font-weight: bold; color: var(--accent); letter-spacing: 1px; }
 .header-logo span { color: var(--text); font-weight: normal; margin-left: 6px; font-size: 14px; }
 .header-info { font-size: 13px; color: var(--muted); }
 .header-date { font-size: 14px; color: var(--accent); font-weight: bold; }
-
 .layout { display: grid; grid-template-columns: 220px 1fr; min-height: calc(100vh - 55px); }
-
 .sidebar { background: var(--panel); border-right: 1px solid var(--border); padding: 20px 0; }
 .sidebar-section { padding: 0 16px; margin-bottom: 8px; }
 .sidebar-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; padding: 0 6px; }
@@ -39,24 +30,21 @@ body { background: var(--bg); color: var(--text); font-family: 'Microsoft JhengH
 .badge { margin-left: auto; background: var(--accent); color: #fff; font-size: 10px; padding: 1px 6px; border-radius: 10px; }
 .badge.green { background: var(--accent2); }
 .sidebar-divider { border: none; border-top: 1px solid var(--border); margin: 12px 16px; }
-
 .main { padding: 24px 28px; overflow-y: auto; }
 .page { display: none; }
 #page-home { display: block; }
 .page:target { display: block; }
 body:has(#page-chb:target) #page-home,
 body:has(#page-calendar:target) #page-home,
-body:has(#page-docs:target) #page-home { display: none; }
-
+body:has(#page-docs:target) #page-home,
+body:has(#page-attendance:target) #page-home { display: none; }
 .page-title { font-size: 20px; font-weight: bold; margin-bottom: 6px; }
 .page-sub { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
-
 .card { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 18px; }
 .card-title { font-size: 13px; font-weight: bold; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
 .card-title .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
 .card-title .dot.green { background: var(--accent2); }
 .card-title .dot.orange { background: var(--accent3); }
-
 .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 18px; }
 .stat-card { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 18px; }
 .stat-label { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
@@ -65,7 +53,6 @@ body:has(#page-docs:target) #page-home { display: none; }
 .stat-value.green { color: var(--accent2); }
 .stat-value.orange { color: var(--accent3); }
 .stat-hint { font-size: 11px; color: var(--muted); margin-top: 4px; }
-
 .tools-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
 .tool-card { background: var(--panel2); border: 1px solid var(--border); border-radius: 12px; padding: 20px; cursor: pointer; transition: all 0.2s; display: flex; flex-direction: column; gap: 8px; }
 .tool-card:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: 0 4px 20px rgba(74,127,212,0.15); }
@@ -74,7 +61,7 @@ body:has(#page-docs:target) #page-home { display: none; }
 .tool-desc { font-size: 12px; color: var(--muted); }
 .tool-badge { display: inline-block; font-size: 10px; padding: 2px 8px; border-radius: 10px; background: rgba(74,127,212,0.15); color: var(--accent); margin-top: 4px; }
 .tool-badge.green { background: rgba(46,204,113,0.15); color: var(--accent2); }
-
+.tool-badge.purple { background: rgba(155,89,182,0.2); color: #bb8fce; }
 .drop-zone { border: 2px dashed var(--border); border-radius: 12px; padding: 40px 20px; text-align: center; cursor: pointer; transition: all 0.2s; background: var(--panel2); }
 .drop-zone:hover, .drop-zone.drag-over { border-color: var(--accent); background: rgba(74,127,212,0.08); }
 .drop-zone .dz-icon { font-size: 40px; margin-bottom: 10px; }
@@ -82,18 +69,15 @@ body:has(#page-docs:target) #page-home { display: none; }
 .drop-zone span { color: var(--accent); }
 input[type=file] { display: none; }
 .file-tag { display: none; margin-top: 12px; padding: 8px 14px; background: rgba(74,127,212,0.1); border: 1px solid var(--border); border-radius: 8px; font-size: 13px; color: var(--accent); }
-
 .btn-run { display: block; width: 100%; padding: 13px; margin-top: 16px; background: var(--accent); color: #fff; border: none; border-radius: 10px; font-size: 15px; cursor: pointer; font-family: inherit; font-weight: bold; transition: background 0.2s; }
 .btn-run:hover { background: #3568b8; }
 .btn-run:disabled { background: #2a3a55; color: var(--muted); cursor: not-allowed; }
 .btn-download { display: none; width: 100%; padding: 12px; margin-top: 12px; background: var(--accent2); color: #fff; border: none; border-radius: 10px; font-size: 14px; cursor: pointer; font-family: inherit; font-weight: bold; }
 .btn-download:hover { background: #27ae60; }
-
 .prog-wrap { display: none; margin-top: 16px; }
 .prog-label { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
 .prog-bar { height: 6px; background: var(--panel2); border-radius: 3px; overflow: hidden; border: 1px solid var(--border); }
 .prog-fill { height: 100%; background: var(--accent); border-radius: 3px; transition: width 0.3s; width: 0; }
-
 .result-box { display: none; margin-top: 16px; padding: 16px; border-radius: 10px; }
 .result-box.ok { background: rgba(46,204,113,0.08); border: 1px solid rgba(46,204,113,0.3); }
 .result-box.err { background: rgba(231,76,60,0.08); border: 1px solid rgba(231,76,60,0.3); }
@@ -104,12 +88,10 @@ input[type=file] { display: none; }
 .rs { flex: 1; background: var(--panel); border-radius: 8px; padding: 10px; text-align: center; border: 1px solid var(--border); }
 .rs-num { font-size: 22px; font-weight: bold; }
 .rs-lbl { font-size: 11px; color: var(--muted); margin-top: 2px; }
-
 .coming-soon { text-align: center; padding: 80px 20px; }
 .coming-soon .cs-icon { font-size: 56px; margin-bottom: 16px; opacity: 0.4; }
 .coming-soon h3 { font-size: 18px; color: var(--muted); margin-bottom: 8px; }
 .coming-soon p { font-size: 13px; color: var(--muted); opacity: 0.7; }
-
 .activity-list { display: flex; flex-direction: column; gap: 10px; }
 .activity-item { display: flex; align-items: center; gap: 12px; padding: 10px; background: var(--panel2); border-radius: 8px; font-size: 13px; }
 .activity-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
@@ -119,14 +101,20 @@ input[type=file] { display: none; }
 .activity-time { color: var(--muted); font-size: 11px; margin-left: auto; white-space: nowrap; }
 a.nav-item, a.tool-card { color: inherit; text-decoration: none; display: flex; }
 a.nav-item { align-items: center; }
+/* 出勤設定 */
+.att-settings { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.att-field label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 5px; }
+.att-field input, .att-field select { width: 100%; padding: 8px 12px; background: var(--panel2); border: 1px solid var(--border); border-radius: 7px; color: var(--text); font-size: 13px; font-family: inherit; }
+.att-field input:focus, .att-field select:focus { outline: none; border-color: var(--accent); }
+.legend-row { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 12px; }
+.legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+.swatch { width: 14px; height: 14px; border-radius: 3px; flex-shrink: 0; }
 </style>
 </head>
 <body>
 
 <div class="header">
-  <div>
-    <div class="header-logo">📊 財務行政儀表板 <span>Finance Admin Hub</span></div>
-  </div>
+  <div><div class="header-logo">📊 財務行政儀表板 <span>Finance Admin Hub</span></div></div>
   <div style="text-align:right">
     <div class="header-date" id="headerDate"></div>
     <div class="header-info" id="headerTime"></div>
@@ -146,6 +134,7 @@ a.nav-item { align-items: center; }
     <hr class="sidebar-divider">
     <div class="sidebar-section">
       <div class="sidebar-label">行政管理</div>
+      <a class="nav-item" id="nav-attendance" href="#page-attendance"><span class="icon">📋</span> 出勤表產生</a>
       <a class="nav-item" id="nav-calendar" href="#page-calendar"><span class="icon">📅</span> 行事曆</a>
       <a class="nav-item" id="nav-docs" href="#page-docs"><span class="icon">📁</span> 文件管理</a>
     </div>
@@ -153,44 +142,35 @@ a.nav-item { align-items: center; }
 
   <div class="main">
 
+    <!-- 首頁 -->
     <div class="page active" id="page-home">
       <div class="page-title">歡迎回來 👋</div>
       <div class="page-sub" id="homeSubtitle">今日財務行政作業總覽</div>
       <div class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-label">上次對帳</div>
-          <div class="stat-value blue" id="lastRun">—</div>
-          <div class="stat-hint" id="lastRunDetail">尚未執行對帳</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">比對成功</div>
-          <div class="stat-value green" id="lastMatched">—</div>
-          <div class="stat-hint">筆發票成功比對</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">留空筆數</div>
-          <div class="stat-value orange" id="lastUnmatched">—</div>
-          <div class="stat-hint">待人工確認</div>
-        </div>
+        <div class="stat-card"><div class="stat-label">上次對帳</div><div class="stat-value blue" id="lastRun">—</div><div class="stat-hint" id="lastRunDetail">尚未執行對帳</div></div>
+        <div class="stat-card"><div class="stat-label">比對成功</div><div class="stat-value green" id="lastMatched">—</div><div class="stat-hint">筆發票成功比對</div></div>
+        <div class="stat-card"><div class="stat-label">留空筆數</div><div class="stat-value orange" id="lastUnmatched">—</div><div class="stat-hint">待人工確認</div></div>
       </div>
       <div class="card">
         <div class="card-title"><span class="dot"></span> 快速工具</div>
         <div class="tools-grid">
           <a class="tool-card" href="#" onclick="event.preventDefault();showChbPage()" style="text-decoration:none;">
-            <div class="tool-icon">🏦</div>
-            <div class="tool-name">CHB 對帳填寫</div>
+            <div class="tool-icon">🏦</div><div class="tool-name">CHB 對帳填寫</div>
             <div class="tool-desc">上傳 CHB*.xlsx，自動比對後台發票、填入採購單號與憑證號碼</div>
             <span class="tool-badge">核心功能</span>
           </a>
+          <a class="tool-card" href="#page-attendance" style="text-decoration:none;">
+            <div class="tool-icon">📋</div><div class="tool-name">出勤表產生</div>
+            <div class="tool-desc">上傳請假紀錄，自動產生每月出勤打卡表單 Excel，含彈性打卡時間</div>
+            <span class="tool-badge purple">行政工具</span>
+          </a>
           <a class="tool-card" href="#page-calendar" style="text-decoration:none;">
-            <div class="tool-icon">📅</div>
-            <div class="tool-name">行事曆 / 待辦</div>
+            <div class="tool-icon">📅</div><div class="tool-name">行事曆 / 待辦</div>
             <div class="tool-desc">財務行政相關事項提醒與排程管理</div>
             <span class="tool-badge green">即將開放</span>
           </a>
           <a class="tool-card" href="#page-docs" style="text-decoration:none;">
-            <div class="tool-icon">📁</div>
-            <div class="tool-name">文件管理</div>
+            <div class="tool-icon">📁</div><div class="tool-name">文件管理</div>
             <div class="tool-desc">發票、報表、合約文件快速存取</div>
             <span class="tool-badge green">即將開放</span>
           </a>
@@ -204,6 +184,7 @@ a.nav-item { align-items: center; }
       </div>
     </div>
 
+    <!-- CHB 對帳 -->
     <div class="page" id="page-chb">
       <div class="page-title">🏦 CHB 彰銀對帳填寫</div>
       <div class="page-sub">上傳 CHB*.xlsx，自動比對後台發票明細，填入採購單號、憑證號碼、手續費、憑證日期</div>
@@ -213,8 +194,7 @@ a.nav-item { align-items: center; }
           <div class="dz-icon">📂</div>
           <p>點擊或拖曳 <span>CHB*.xlsx</span> 到這裡</p>
           <p style="font-size:12px;margin-top:6px;opacity:0.6">需包含 CHB 和 後台 兩個工作表</p>
-          <input type="file" id="fileInput" accept=".xlsx"
-            onchange="if(this.files[0]){setFile(this.files[0]);}">
+          <input type="file" id="fileInput" accept=".xlsx" onchange="if(this.files[0]){setFile(this.files[0]);}">
         </div>
         <div class="file-tag" id="fileTag">📄 <span id="fileName"></span></div>
         <button class="btn-run" id="runBtn" disabled onclick="runReconcile()">▶ 開始比對</button>
@@ -239,24 +219,84 @@ a.nav-item { align-items: center; }
       </div>
     </div>
 
-    <div class="page" id="page-calendar">
-      <div class="page-title">📅 行事曆 / 待辦</div>
-      <div class="page-sub">財務行政事項排程管理</div>
-      <div class="coming-soon">
-        <div class="cs-icon">📅</div>
-        <h3>功能開發中</h3>
-        <p>可整合 Google Calendar 或手動新增待辦事項</p>
+    <!-- 出勤表產生 -->
+    <div class="page" id="page-attendance">
+      <div class="page-title">📋 出勤表產生</div>
+      <div class="page-sub">上傳請假紀錄 Excel，自動產生每月出勤打卡表單，完全在瀏覽器執行，不消耗任何額度</div>
+
+      <div class="card">
+        <div class="card-title"><span class="dot"></span> 上傳請假紀錄</div>
+        <div class="drop-zone" id="attDropZone" onclick="document.getElementById('attFileInput').click()">
+          <div class="dz-icon">📋</div>
+          <p>點擊或拖曳 <span>請假申請.xlsx</span> 到這裡</p>
+          <p style="font-size:12px;margin-top:6px;opacity:0.6">需包含「請假作業_補休_調休」工作表</p>
+          <input type="file" id="attFileInput" accept=".xlsx" onchange="if(this.files[0]){attLoadFile(this.files[0]);}">
+        </div>
+        <div class="file-tag" id="attFileTag">📄 <span id="attFileName"></span></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="dot orange"></span> 出勤設定</div>
+        <div class="att-settings">
+          <div class="att-field"><label>員工姓名</label><input type="text" id="attEmpName" placeholder="自動從檔案讀取"></div>
+          <div class="att-field"><label>員工編號</label><input type="text" id="attEmpId" placeholder="自動從檔案讀取"></div>
+          <div class="att-field"><label>部門</label><input type="text" id="attEmpDept" placeholder="自動從檔案讀取"></div>
+          <div class="att-field"><label>職稱</label><input type="text" id="attEmpTitle" placeholder="自動從檔案讀取"></div>
+          <div class="att-field"><label>標準上班時間</label><input type="time" id="attWorkIn" value="09:00"></div>
+          <div class="att-field"><label>標準下班時間</label><input type="time" id="attWorkOut" value="18:00"></div>
+          <div class="att-field"><label>彈性範圍</label>
+            <select id="attFlex">
+              <option value="30">±30 分鐘</option>
+              <option value="45" selected>±45 分鐘</option>
+              <option value="60">±60 分鐘</option>
+            </select>
+          </div>
+          <div class="att-field"><label>輸出檔名前綴</label><input type="text" id="attOutName" value="出勤打卡表單"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="dot green"></span> 打卡規則說明</div>
+        <div style="font-size:13px;color:var(--muted);line-height:1.8;">
+          <p>✦ <strong style="color:var(--text)">一般出勤</strong>：上班時間在彈性範圍內自然浮動，下班 = 上班 + 9小時（含午休1小時）</p>
+          <p>✦ <strong style="color:var(--text)">全天假（8小時）</strong>：上下班均顯示「－」</p>
+          <p>✦ <strong style="color:var(--text)">下午請假</strong>：正常上班打卡，下班打卡為請假開始前</p>
+          <p>✦ <strong style="color:var(--text)">上午請假</strong>：假結束後才打上班卡，補足 8 小時工作</p>
+          <p>✦ <strong style="color:var(--text)">本月合計</strong>：僅顯示假別與對應時數</p>
+        </div>
+        <div class="legend-row">
+          <div class="legend-item"><div class="swatch" style="background:#FFE699;border:1px solid #555"></div>請假日</div>
+          <div class="legend-item"><div class="swatch" style="background:#D9E1F2;border:1px solid #555"></div>例假日</div>
+          <div class="legend-item"><div class="swatch" style="background:#F4B942;border:1px solid #555"></div>國定假日</div>
+          <div class="legend-item"><div class="swatch" style="background:#E2EFDA;border:1px solid #555"></div>本月合計</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <button class="btn-run" id="attGenBtn" disabled onclick="attGenerate()">▶ 產生出勤打卡表單</button>
+        <div class="prog-wrap" id="attProgWrap">
+          <div class="prog-label" id="attProgLabel">處理中...</div>
+          <div class="prog-bar"><div class="prog-fill" id="attProgFill"></div></div>
+        </div>
+        <div class="result-box ok" id="attResult" style="display:none;">
+          <div class="result-title">✅ 產生完成，已自動下載！</div>
+          <div id="attResultText" style="font-size:13px;color:var(--muted);margin-top:4px;"></div>
+        </div>
       </div>
     </div>
 
+    <!-- 行事曆 -->
+    <div class="page" id="page-calendar">
+      <div class="page-title">📅 行事曆 / 待辦</div>
+      <div class="page-sub">財務行政事項排程管理</div>
+      <div class="coming-soon"><div class="cs-icon">📅</div><h3>功能開發中</h3><p>可整合 Google Calendar 或手動新增待辦事項</p></div>
+    </div>
+
+    <!-- 文件管理 -->
     <div class="page" id="page-docs">
       <div class="page-title">📁 文件管理</div>
       <div class="page-sub">發票、報表、合約文件快速存取</div>
-      <div class="coming-soon">
-        <div class="cs-icon">📁</div>
-        <h3>功能開發中</h3>
-        <p>未來可加入常用文件的快速連結與搜尋功能</p>
-      </div>
+      <div class="coming-soon"><div class="cs-icon">📁</div><h3>功能開發中</h3><p>未來可加入常用文件的快速連結與搜尋功能</p></div>
     </div>
 
   </div>
@@ -274,51 +314,201 @@ a.nav-item { align-items: center; }
       style="width:100%;padding:11px 14px;background:#212d42;border:1px solid #2a3a55;border-radius:8px;color:#e8edf5;font-size:15px;font-family:inherit;outline:none;margin-bottom:12px;"
       onkeydown="if(event.key==='Enter')checkPw()">
     <div id="pwError" style="color:#e74c3c;font-size:13px;margin-bottom:10px;display:none;">密碼錯誤，請重新輸入</div>
-    <button onclick="checkPw()"
-      style="width:100%;padding:12px;background:#4a7fd4;color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:bold;cursor:pointer;font-family:inherit;">確認</button>
-    <button onclick="cancelPw()"
-      style="width:100%;padding:10px;margin-top:8px;background:transparent;color:#8899aa;border:1px solid #2a3a55;border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit;">取消</button>
+    <button onclick="checkPw()" style="width:100%;padding:12px;background:#4a7fd4;color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:bold;cursor:pointer;font-family:inherit;">確認</button>
+    <button onclick="cancelPw()" style="width:100%;padding:10px;margin-top:8px;background:transparent;color:#8899aa;border:1px solid #2a3a55;border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit;">取消</button>
   </div>
 </div>
+
 <script>
+// ── CHB 密碼保護 ──
 (function(){
-  var HASH = '8a67d92fc49880d2cda32940deabc0244d7884fe7b1ffaa82d300cf0cfe72b24';
-  var KEY = 'chb_auth';
-
-  window.showChbPage = function(){
-    if(sessionStorage.getItem(KEY) === HASH){
-      // 已驗證，直接顯示 CHB 頁面
-      document.getElementById('pwOverlay').style.display='none';
-      window.location.hash = '#page-chb';
-    } else {
-      // 未驗證，顯示密碼框
-      document.getElementById('pwOverlay').style.display='flex';
-      document.getElementById('pwInput').value='';
-      document.getElementById('pwError').style.display='none';
-      setTimeout(function(){ document.getElementById('pwInput').focus(); }, 100);
-    }
+  var HASH='8a67d92fc49880d2cda32940deabc0244d7884fe7b1ffaa82d300cf0cfe72b24',KEY='chb_auth';
+  window.showChbPage=function(){
+    if(sessionStorage.getItem(KEY)===HASH){window.location.hash='#page-chb';}
+    else{document.getElementById('pwOverlay').style.display='flex';document.getElementById('pwInput').value='';document.getElementById('pwError').style.display='none';setTimeout(()=>document.getElementById('pwInput').focus(),100);}
   };
-
-  window.cancelPw = function(){
-    document.getElementById('pwOverlay').style.display='none';
-    window.location.hash = '#page-home';
-  };
-
-  window.checkPw = async function(){
-    var val = document.getElementById('pwInput').value;
-    var buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(val));
-    var hex = Array.from(new Uint8Array(buf)).map(function(b){return b.toString(16).padStart(2,'0');}).join('');
-    if(hex === HASH){
-      sessionStorage.setItem(KEY, HASH);
-      document.getElementById('pwOverlay').style.display='none';
-      window.location.hash = '#page-chb';
-    } else {
-      document.getElementById('pwError').style.display='block';
-      document.getElementById('pwInput').value='';
-      document.getElementById('pwInput').focus();
-    }
+  window.cancelPw=function(){document.getElementById('pwOverlay').style.display='none';window.location.hash='#page-home';};
+  window.checkPw=async function(){
+    var val=document.getElementById('pwInput').value;
+    var buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(val));
+    var hex=Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+    if(hex===HASH){sessionStorage.setItem(KEY,HASH);document.getElementById('pwOverlay').style.display='none';window.location.hash='#page-chb';}
+    else{document.getElementById('pwError').style.display='block';document.getElementById('pwInput').value='';document.getElementById('pwInput').focus();}
   };
 })();
+
+// ── 出勤表產生器 ──
+const ATT_HOLIDAYS={'2023-12-31':'元旦補假','2024-01-01':'元旦','2024-02-08':'除夕','2024-02-09':'春節','2024-02-10':'春節','2024-02-11':'春節','2024-02-12':'春節補假','2024-02-13':'春節補假','2024-02-14':'春節補假','2024-04-04':'兒童節','2024-04-05':'清明節','2024-05-01':'勞動節','2024-06-10':'端午節','2024-09-17':'中秋節','2024-10-10':'國慶日','2025-01-01':'元旦','2025-01-27':'除夕','2025-01-28':'春節','2025-01-29':'春節','2025-01-30':'春節','2025-01-31':'春節補假','2025-02-28':'和平紀念日','2025-04-03':'兒童節/清明補假','2025-04-04':'兒童節','2025-05-01':'勞動節','2025-05-30':'端午節補假','2025-06-02':'端午節','2025-10-06':'中秋節','2025-10-10':'國慶日','2026-01-01':'元旦','2026-02-16':'除夕','2026-02-17':'春節','2026-02-18':'春節','2026-02-19':'春節','2026-02-20':'春節補假','2026-02-28':'和平紀念日','2026-04-03':'兒童節','2026-04-04':'清明節','2026-05-01':'勞動節'};
+const WD=['一','二','三','四','五','六','日'];
+let attLeaveMap={};
+
+function attDK(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+function attAM(hhmm,min){const[h,m]=hhmm.split(':').map(Number),t=h*60+m+Math.round(min);return `${String(Math.floor(t/60)).padStart(2,'0')}:${String(t%60).padStart(2,'0')}`;}
+function attRO(seed,flex){const a=((seed*1664525+1013904223)&0xFFFFFFFF)/0xFFFFFFFF,b=(((seed+1)*1664525+1013904223)&0xFFFFFFFF)/0xFFFFFFFF;const g=Math.sqrt(-2*Math.log(Math.max(a,1e-10)))*Math.cos(2*Math.PI*b);return Math.max(-flex,Math.min(flex,Math.round(g*18+5)));}
+
+function attCP(d,leaves,wIn,wOut,flex){
+  const s=d.getFullYear()*10000+(d.getMonth()+1)*100+d.getDate();
+  if(!leaves||!leaves.length){const o=attRO(s,flex),i=attAM(wIn,o);return{inT:i,outT:attAM(i,9*60),lv:'',h:0,note:''};}
+  const tot=leaves.reduce((a,b)=>a+b.hours,0);
+  const lv=[...new Set(leaves.map(l=>l.type))].join('/');
+  if(tot>=8)return{inT:'－',outT:'－',lv,h:tot,note:'全天請假'};
+  const earl=leaves.reduce((a,b)=>a.start<b.start?a:b);
+  const late=leaves.reduce((a,b)=>a.end>b.end?a:b);
+  const sh=earl.start.getHours(),sm=earl.start.getMinutes(),eh=late.end.getHours(),em=late.end.getMinutes();
+  const rm=Math.round((8-tot)*60);
+  if(sh===9&&sm===0){const i=`${String(eh).padStart(2,'0')}:${String(em).padStart(2,'0')}`;return{inT:i,outT:attAM(i,rm+(eh>=13?0:60)),lv,h:tot,note:`上午${lv}`};}
+  if(eh===18&&em===0){return{inT:attAM(wIn,attRO(s,flex)),outT:`${String(sh).padStart(2,'0')}:${String(sm).padStart(2,'0')}`,lv,h:tot,note:`下午${lv}`};}
+  return{inT:attAM(wIn,attRO(s,flex)),outT:attAM(wOut,attRO(s+99,flex)),lv,h:tot,note:`中途${lv}(${String(sh).padStart(2,'0')}:${String(sm).padStart(2,'0')}-${String(eh).padStart(2,'0')}:${String(em).padStart(2,'0')})`};
+}
+
+const attDZ=document.getElementById('attDropZone');
+attDZ.addEventListener('dragover',e=>{e.preventDefault();attDZ.classList.add('drag-over');});
+attDZ.addEventListener('dragleave',()=>attDZ.classList.remove('drag-over'));
+attDZ.addEventListener('drop',e=>{e.preventDefault();attDZ.classList.remove('drag-over');if(e.dataTransfer.files[0])attLoadFile(e.dataTransfer.files[0]);});
+
+function attLoadFile(file){
+  document.getElementById('attFileName').textContent=file.name;
+  document.getElementById('attFileTag').style.display='block';
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const wb=XLSX.read(e.target.result,{type:'array',cellDates:true});
+      const sn=wb.SheetNames.find(s=>s.includes('請假'))||wb.SheetNames[0];
+      const rows=XLSX.utils.sheet_to_json(wb.Sheets[sn],{header:1,raw:false});
+      const hdr=rows[0];const idx={};hdr.forEach((h,i)=>{if(h)idx[String(h).trim()]=i;});
+      const ni=idx['姓名']??2,di=idx['部門']??3,ti=idx['職稱']??4,ii=idx['員工編號']??1;
+      const tyi=idx['假別']??5,dti=idx['歸屬日']??6,sti=idx['開始時間']??7,eti=idx['結束時間']??8,hi=idx['總時數']??9;
+      attLeaveMap={};let en='',eid='',ed='',et='';
+      for(let r=1;r<rows.length;r++){
+        const row=rows[r];if(!row||!row[dti])continue;
+        if(!en&&row[ni]){en=String(row[ni]).trim();eid=String(row[ii]||'').trim();ed=String(row[di]||'').trim();et=String(row[ti]||'').trim();}
+        const ds=String(row[dti]).trim();let d;
+        if(ds.includes('-'))d=new Date(ds);
+        else if(ds.includes('/')){const[y,m,day]=ds.split('/');d=new Date(parseInt(y),parseInt(m)-1,parseInt(day));}
+        else continue;if(isNaN(d))continue;
+        const pT=str=>{if(!str)return null;const s=String(str).trim();const m=s.match(/(\d{1,2}):(\d{2})/g);if(!m)return null;const[hh,mm]=m[m.length-1].split(':').map(Number);const dt=new Date(d);dt.setHours(hh,mm,0,0);return dt;};
+        const start=pT(row[sti]),end=pT(row[eti]);
+        const hs=String(row[hi]||'0');let hrs=0;
+        if(hs.includes(':'))hrs=parseInt(hs)+parseInt(hs.split(':')[1])/60;else hrs=parseFloat(hs)||0;
+        if(!start||!end)continue;
+        const key=attDK(d);if(!attLeaveMap[key])attLeaveMap[key]=[];
+        attLeaveMap[key].push({type:String(row[tyi]||'').trim(),start,end,hours:hrs});
+      }
+      if(en)document.getElementById('attEmpName').value=en;
+      if(eid)document.getElementById('attEmpId').value=eid;
+      if(ed)document.getElementById('attEmpDept').value=ed;
+      if(et)document.getElementById('attEmpTitle').value=et;
+      document.getElementById('attGenBtn').disabled=false;
+      document.getElementById('attResult').style.display='none';
+    }catch(err){alert('讀取失敗：'+err.message);}
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+async function attGenerate(){
+  const en=document.getElementById('attEmpName').value||'員工';
+  const eid=document.getElementById('attEmpId').value||'';
+  const ed=document.getElementById('attEmpDept').value||'';
+  const et=document.getElementById('attEmpTitle').value||'';
+  const wIn=document.getElementById('attWorkIn').value||'09:00';
+  const wOut=document.getElementById('attWorkOut').value||'18:00';
+  const flex=parseInt(document.getElementById('attFlex').value)||45;
+  const oName=document.getElementById('attOutName').value||'出勤打卡表單';
+
+  const btn=document.getElementById('attGenBtn');btn.disabled=true;
+  const prog=document.getElementById('attProgWrap');
+  const bar=document.getElementById('attProgFill');
+  const lbl=document.getElementById('attProgLabel');
+  prog.style.display='block';document.getElementById('attResult').style.display='none';
+
+  const dates=Object.keys(attLeaveMap).map(k=>new Date(k)).filter(d=>!isNaN(d));
+  if(!dates.length){alert('找不到有效請假資料');btn.disabled=false;return;}
+  const minD=new Date(Math.min(...dates)),maxD=new Date(Math.max(...dates));
+  const months=[];let y=minD.getFullYear(),m=minD.getMonth();
+  const ey=maxD.getFullYear(),em2=maxD.getMonth();
+  while(y<ey||(y===ey&&m<=em2)){months.push([y,m]);m++;if(m>11){m=0;y++;}}
+
+  const C={H:{type:'pattern',pattern:'solid',fgColor:{argb:'FF1F4E79'}},TL:{type:'pattern',pattern:'solid',fgColor:{argb:'FFDEEAF1'}},WE:{type:'pattern',pattern:'solid',fgColor:{argb:'FFD9E1F2'}},LV:{type:'pattern',pattern:'solid',fgColor:{argb:'FFFFE699'}},HO:{type:'pattern',pattern:'solid',fgColor:{argb:'FFF4B942'}},ST:{type:'pattern',pattern:'solid',fgColor:{argb:'FFE2EFDA'}},SG:{type:'pattern',pattern:'solid',fgColor:{argb:'FFFFF2CC'}},AL:{type:'pattern',pattern:'solid',fgColor:{argb:'FFF5F9FF'}},WH:{type:'pattern',pattern:'solid',fgColor:{argb:'FFFFFFFF'}},SI:{type:'pattern',pattern:'solid',fgColor:{argb:'FFFFFDF0'}}};
+  const tb={top:{style:'thin',color:{argb:'FFBFBFBF'}},left:{style:'thin',color:{argb:'FFBFBFBF'}},bottom:{style:'thin',color:{argb:'FFBFBFBF'}},right:{style:'thin',color:{argb:'FFBFBFBF'}}};
+  const ctr={horizontal:'center',vertical:'middle',wrapText:true},lft={horizontal:'left',vertical:'middle'};
+  function sc(cell,{font={},fill=null,align=ctr}={}){cell.font={name:'Arial',size:10,...font};if(fill)cell.fill=fill;cell.alignment=align;cell.border=tb;}
+
+  const workbook=new ExcelJS.Workbook();
+
+  for(let mi=0;mi<months.length;mi++){
+    const[year,month]=months[mi];
+    bar.style.width=`${Math.round((mi/months.length)*100)}%`;
+    lbl.textContent=`產生中... ${year}年${month+1}月 (${mi+1}/${months.length})`;
+    await new Promise(r=>setTimeout(r,0));
+    const dI=new Date(year,month+1,0).getDate();
+    const ws=workbook.addWorksheet(`${year}-${String(month+1).padStart(2,'0')}`);
+    ws.views=[{showGridLines:false}];
+    [12,6,13,13,16,10,30].forEach((w,i)=>ws.getColumn(i+1).width=w);
+
+    ws.mergeCells('A1:G1');sc(ws.getCell('A1'),{font:{size:13,bold:true,color:{argb:'FF1F4E79'}},fill:C.TL});
+    ws.getCell('A1').value=`出勤打卡紀錄表　${year}年${month+1}月`;ws.getRow(1).height=32;
+
+    [['A2','B2',`員工姓名：${en}`],['C2','D2',`員工編號：${eid}`],['E2','F2',`部　　門：${ed}`],['G2','G2',`職　　稱：${et}`]].forEach(([s,e,v])=>{ws.mergeCells(`${s}:${e}`);sc(ws.getCell(s),{font:{size:10}});ws.getCell(s).value=v;});
+    ws.getRow(2).height=20;
+
+    ws.mergeCells('A3:G3');ws.getCell('A3').value=`※ 彈性上下班（±${flex}分鐘），午休1小時，每日實際工時8小時`;
+    ws.getCell('A3').font={name:'Arial',size:9,color:{argb:'FF808080'},italic:true};ws.getCell('A3').alignment=lft;ws.getRow(3).height=15;
+
+    ws.getRow(4).height=26;
+    ['日期','星期','上班打卡','下班打卡','假　　別','請假時數','備　　註'].forEach((h,i)=>{const c=ws.getCell(4,i+1);c.value=h;sc(c,{font:{bold:true,color:{argb:'FFFFFFFF'}},fill:C.H});});
+
+    const DR=5;const mLv={};
+    for(let day=1;day<=dI;day++){
+      const d=new Date(year,month,day);const row=DR+day-1;ws.getRow(row).height=18;
+      const dk=attDK(d),holiday=ATT_HOLIDAYS[dk]||'',weekend=d.getDay()===0||d.getDay()===6,leaves=attLeaveMap[dk]||[],isOff=weekend||!!holiday;
+      let inT='－',outT='－',lv='',h=0,note='',bg;
+      if(isOff){lv=holiday||'';bg=holiday?C.HO:C.WE;}
+      else{const p=attCP(d,leaves,wIn,wOut,flex);inT=p.inT;outT=p.outT;lv=p.lv;h=p.h;note=p.note;bg=h>0?C.LV:(day%2===0?C.AL:C.WH);if(h>0)leaves.forEach(l=>{mLv[l.type]=(mLv[l.type]||0)+l.hours;});}
+      [`${year}/${String(month+1).padStart(2,'0')}/${String(day).padStart(2,'0')}`,`(${WD[d.getDay()===0?6:d.getDay()-1]})`,inT,outT,lv,h?`${h.toFixed(1)}h`:'',note].forEach((v,ci)=>{const c=ws.getCell(row,ci+1);c.value=v;sc(c,{font:{color:{argb:weekend?'FFC00000':'FF000000'}},fill:bg});});
+    }
+
+    const sr=DR+dI;ws.getRow(sr).height=22;
+    ws.mergeCells(`A${sr}:B${sr}`);sc(ws.getCell(`A${sr}`),{font:{bold:true},fill:C.ST});ws.getCell(`A${sr}`).value='本月合計';
+    ws.mergeCells(`C${sr}:G${sr}`);
+    const st=Object.keys(mLv).length>0?Object.entries(mLv).map(([k,v])=>`${k}：${v.toFixed(1)}h`).join('　'):'無請假';
+    sc(ws.getCell(`C${sr}`),{font:{bold:true},fill:C.ST,align:lft});ws.getCell(`C${sr}`).value=st;
+
+    const lg=sr+2;ws.mergeCells(`A${lg}:G${lg}`);
+    ws.getCell(`A${lg}`).value='圖例：  黃底 = 請假日　　藍底 = 例假日（六/日）　　橘底 = 國定假日';
+    ws.getCell(`A${lg}`).font={name:'Arial',size:9,color:{argb:'FF808080'},italic:true};ws.getCell(`A${lg}`).alignment=lft;
+
+    const sg1=lg+2;ws.getRow(sg1).height=22;ws.mergeCells(`A${sg1}:G${sg1}`);
+    sc(ws.getCell(`A${sg1}`),{font:{size:11,bold:true,color:{argb:'FF1F4E79'}},fill:C.SG,align:lft});
+    ws.getCell(`A${sg1}`).value=`▌ 員工出勤確認簽名（${year}年${month+1}月）`;
+
+    const sg2=sg1+1;ws.getRow(sg2).height=20;
+    [['A','A','員工姓名'],['B','D','員工簽名'],['E','E','確認日期'],['F','F','主管確認'],['G','G','主管日期']].forEach(([s,e,v])=>{ws.mergeCells(`${s}${sg2}:${e}${sg2}`);sc(ws.getCell(`${s}${sg2}`),{font:{bold:true},fill:C.SG});ws.getCell(`${s}${sg2}`).value=v;});
+
+    const sg3=sg2+1;ws.getRow(sg3).height=45;
+    ws.getCell(`A${sg3}`).value=en;sc(ws.getCell(`A${sg3}`),{fill:C.SI});
+    [['B','D'],['E','E'],['F','F'],['G','G']].forEach(([s,e])=>{ws.mergeCells(`${s}${sg3}:${e}${sg3}`);sc(ws.getCell(`${s}${sg3}`),{fill:C.SI});});
+
+    const sg4=sg3+1;ws.mergeCells(`A${sg4}:G${sg4}`);
+    ws.getCell(`A${sg4}`).value='※ 員工核對本月出勤資料無誤後親筆簽名，主管複核存檔備查。';
+    ws.getCell(`A${sg4}`).font={name:'Arial',size:9,color:{argb:'FF808080'},italic:true};ws.getCell(`A${sg4}`).alignment=lft;
+
+    ws.views=[{state:'frozen',xSplit:0,ySplit:4,activeCell:'A5',showGridLines:false}];
+  }
+
+  bar.style.width='100%';lbl.textContent='寫入檔案中...';await new Promise(r=>setTimeout(r,50));
+
+  const buffer=await workbook.xlsx.writeBuffer();
+  const blob=new Blob([buffer],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;
+  a.download=`${oName}_${en.split(' ')[0]}_${months[0][0]}-${String(months[0][1]+1).padStart(2,'0')}至${months[months.length-1][0]}-${String(months[months.length-1][1]+1).padStart(2,'0')}.xlsx`;
+  document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
+
+  prog.style.display='none';
+  document.getElementById('attResult').style.display='block';
+  document.getElementById('attResultText').textContent=`共產生 ${months.length} 個月份工作表（${months[0][0]}年${months[0][1]+1}月 ～ ${months[months.length-1][0]}年${months[months.length-1][1]+1}月）`;
+  btn.disabled=false;
+}
 </script>
 </body>
 </html>
