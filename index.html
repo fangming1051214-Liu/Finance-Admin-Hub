@@ -359,6 +359,19 @@ function attCP(d,leaves,wIn,wOut,flex){
   return{inT,outLeave:attAM(lvSt,((s*77777)>>>0)%6),inReturn:attAM(lvEd,((s*99991)>>>0)%6),outT,lv,h:tot,note:`中途${lv}`};
 }
 
+// 欄位字母（支援 AA/AB…）
+function attCL(n){if(n<=26)return String.fromCharCode(64+n);return String.fromCharCode(63+Math.ceil(n/26))+String.fromCharCode(64+((n-1)%26+1));}
+
+// 單日單員工的 cell 顯示資料
+function getEmpDayData(d,leaves,wIn,wOut,flex){
+  const p=attCP(d,leaves,wIn,wOut,flex);
+  if(p.h>=8)return{inCell:p.lv,outLeave:'',inReturn:'',outCell:p.lv,lv:p.lv,lvHours:p.h};
+  if(p.note.startsWith('上午'))return{inCell:p.lv,outLeave:'',inReturn:'',outCell:p.outT,lv:p.lv,lvHours:p.h};
+  if(p.note.startsWith('下午'))return{inCell:p.inT,outLeave:'',inReturn:'',outCell:p.lv,lv:p.lv,lvHours:p.h};
+  if(p.note.startsWith('中途'))return{inCell:p.inT,outLeave:p.outLeave,inReturn:p.inReturn,outCell:p.outT,lv:p.lv,lvHours:p.h};
+  return{inCell:p.inT,outLeave:'',inReturn:'',outCell:p.outT,lv:'',lvHours:0};
+}
+
 const attDZ=document.getElementById('attDropZone');
 attDZ.addEventListener('dragover',e=>{e.preventDefault();attDZ.classList.add('drag-over');});
 attDZ.addEventListener('dragleave',()=>attDZ.classList.remove('drag-over'));
@@ -427,7 +440,6 @@ function attLoadFile(file){
 async function attGenerate(){
   const empList=Object.values(attEmployees);
   if(!empList.length){alert('請先上傳請假紀錄');return;}
-  const isMulti=empList.length>1;
   const wIn=document.getElementById('attWorkIn').value||'09:00';
   const wOut=document.getElementById('attWorkOut').value||'18:00';
   const flex=parseInt(document.getElementById('attFlex').value)||45;
@@ -456,118 +468,121 @@ async function attGenerate(){
   const months=[];let y=startY,m=startM;
   while(y<endY||(y===endY&&m<=endM)){months.push([y,m]);m++;if(m>11){m=0;y++;}}
 
-  // 載入所有需要的年份假日
-  const yearsNeeded=[...new Set(months.map(([y])=>y))];
+  // 載入假日
   lbl.textContent='載入假日資料...';
-  await attEnsureHolidays(yearsNeeded);
+  await attEnsureHolidays([...new Set(months.map(([y])=>y))]);
 
-  const C={H:{type:'pattern',pattern:'solid',fgColor:{argb:'FF1F4E79'}},TL:{type:'pattern',pattern:'solid',fgColor:{argb:'FFDEEAF1'}},WE:{type:'pattern',pattern:'solid',fgColor:{argb:'FFD9E1F2'}},LV:{type:'pattern',pattern:'solid',fgColor:{argb:'FFFFE699'}},HO:{type:'pattern',pattern:'solid',fgColor:{argb:'FFF4B942'}},ST:{type:'pattern',pattern:'solid',fgColor:{argb:'FFE2EFDA'}},SG:{type:'pattern',pattern:'solid',fgColor:{argb:'FFFFF2CC'}},AL:{type:'pattern',pattern:'solid',fgColor:{argb:'FFF5F9FF'}},WH:{type:'pattern',pattern:'solid',fgColor:{argb:'FFFFFFFF'}},SI:{type:'pattern',pattern:'solid',fgColor:{argb:'FFFFFDF0'}}};
+  const C={H:{type:'pattern',pattern:'solid',fgColor:{argb:'FF1F4E79'}},TL:{type:'pattern',pattern:'solid',fgColor:{argb:'FFDEEAF1'}},WE:{type:'pattern',pattern:'solid',fgColor:{argb:'FFD9E1F2'}},LV:{type:'pattern',pattern:'solid',fgColor:{argb:'FFFFE699'}},HO:{type:'pattern',pattern:'solid',fgColor:{argb:'FFF4B942'}},ST:{type:'pattern',pattern:'solid',fgColor:{argb:'FFE2EFDA'}},SG:{type:'pattern',pattern:'solid',fgColor:{argb:'FFFFF2CC'}},AL:{type:'pattern',pattern:'solid',fgColor:{argb:'FFF5F9FF'}},WH:{type:'pattern',pattern:'solid',fgColor:{argb:'FFFFFFFF'}}};
   const tb={top:{style:'thin',color:{argb:'FFBFBFBF'}},left:{style:'thin',color:{argb:'FFBFBFBF'}},bottom:{style:'thin',color:{argb:'FFBFBFBF'}},right:{style:'thin',color:{argb:'FFBFBFBF'}}};
   const ctr={horizontal:'center',vertical:'middle',wrapText:true},lft={horizontal:'left',vertical:'middle'};
+  const tb={top:{style:'thin',color:{argb:'FFBFBFBF'}},left:{style:'thin',color:{argb:'FFBFBFBF'}},bottom:{style:'thin',color:{argb:'FFBFBFBF'}},right:{style:'thin',color:{argb:'FFBFBFBF'}}};
   function sc(cell,{font={},fill=null,align=ctr}={}){cell.font={name:'Arial',size:10,...font};if(fill)cell.fill=fill;cell.alignment=align;cell.border=tb;}
 
+  const NC=2+empList.length+1; // 日期+時間+員工…+備註
   const workbook=new ExcelJS.Workbook();
-  const totalSteps=months.length*empList.length;let stepsDone=0;
 
   for(let mi=0;mi<months.length;mi++){
     const[year,month]=months[mi];
+    bar.style.width=`${Math.round((mi/months.length)*100)}%`;
     lbl.textContent=`產生中... ${year}年${month+1}月 (${mi+1}/${months.length})`;
     await new Promise(r=>setTimeout(r,0));
     const dI=new Date(year,month+1,0).getDate();
     const ws=workbook.addWorksheet(`${year}-${String(month+1).padStart(2,'0')}`);
-    ws.views=[{showGridLines:false}];
-    [12,6,12,12,12,12,14,9,28].forEach((w,i)=>ws.getColumn(i+1).width=w);
-    let curRow=1;
+    ws.pageSetup={orientation:'landscape',fitToPage:true,fitToWidth:1,fitToHeight:0};
+    ws.views=[{showGridLines:false,state:'frozen',xSplit:2,ySplit:2}];
 
-    if(isMulti){
-      ws.mergeCells(`A${curRow}:I${curRow}`);
-      sc(ws.getCell(`A${curRow}`),{font:{size:13,bold:true,color:{argb:'FF1F4E79'}},fill:C.TL});
-      ws.getCell(`A${curRow}`).value=`出勤打卡紀錄表　${year}年${month+1}月　（共 ${empList.length} 人）`;
-      ws.getRow(curRow).height=32;curRow++;
-    }
+    ws.getColumn(1).width=16;ws.getColumn(2).width=9;
+    empList.forEach((_,i)=>ws.getColumn(3+i).width=12);
+    ws.getColumn(NC).width=16;
 
-    for(let ei=0;ei<empList.length;ei++){
-      const emp=empList[ei];
-      stepsDone++;bar.style.width=`${Math.round(stepsDone/totalSteps*100)}%`;
-      await new Promise(r=>setTimeout(r,0));
+    // Row 1: 標題
+    ws.mergeCells(1,1,1,NC);ws.getRow(1).height=28;
+    sc(ws.getCell(1,1),{font:{size:13,bold:true,color:{argb:'FF1F4E79'}},fill:C.TL});
+    ws.getCell(1,1).value=`出勤打卡紀錄表　${year}年${month+1}月`;
 
-      if(isMulti&&ei>0){curRow+=2;}
+    // Row 2: 欄位標頭
+    ws.getRow(2).height=22;
+    ['日期','時間'].forEach((v,i)=>{sc(ws.getCell(2,i+1),{font:{bold:true,color:{argb:'FFFFFFFF'}},fill:C.H});ws.getCell(2,i+1).value=v;});
+    empList.forEach((emp,i)=>{sc(ws.getCell(2,3+i),{font:{bold:true,color:{argb:'FFFFFFFF'}},fill:C.H});ws.getCell(2,3+i).value=emp.name.split(' ')[0];});
+    sc(ws.getCell(2,NC),{font:{bold:true,color:{argb:'FFFFFFFF'}},fill:C.H});ws.getCell(2,NC).value='備註';
 
-      if(!isMulti){
-        ws.mergeCells(`A${curRow}:I${curRow}`);
-        sc(ws.getCell(`A${curRow}`),{font:{size:13,bold:true,color:{argb:'FF1F4E79'}},fill:C.TL});
-        ws.getCell(`A${curRow}`).value=`出勤打卡紀錄表　${year}年${month+1}月`;
-        ws.getRow(curRow).height=32;curRow++;
+    let curRow=3;
+    const mLv=empList.map(()=>({}));
+
+    for(let day=1;day<=dI;day++){
+      const d=new Date(year,month,day);
+      const dk=attDK(d),holiday=ATT_HOLIDAYS[dk]||'',weekend=d.getDay()===0||d.getDay()===6;
+      const wdName=WD[d.getDay()===0?6:d.getDay()-1];
+      const isOff=weekend||!!holiday;
+
+      if(isOff){
+        ws.getRow(curRow).height=14;
+        ws.mergeCells(curRow,1,curRow,NC);
+        sc(ws.getCell(curRow,1),{font:{size:9,bold:true},fill:holiday?C.HO:C.WE,align:lft});
+        ws.getCell(curRow,1).value=`${year}/${String(month+1).padStart(2,'0')}/${String(day).padStart(2,'0')}（${wdName}）${holiday?' '+holiday:'　例假日'}`;
+        curRow++;continue;
       }
 
-      [['A','B',`員工姓名：${emp.name}`],['C','D',`員工編號：${emp.id}`],['E','F',`部　　門：${emp.dept}`],['G','I',`職　　稱：${emp.title}`]].forEach(([s,e,v])=>{ws.mergeCells(`${s}${curRow}:${e}${curRow}`);sc(ws.getCell(`${s}${curRow}`),{font:{size:10}});ws.getCell(`${s}${curRow}`).value=v;});
-      ws.getRow(curRow).height=20;curRow++;
+      const empDay=empList.map(emp=>getEmpDayData(d,emp.leaveMap[dk]||[],wIn,wOut,flex));
+      empDay.forEach((e,ei)=>{if(e.lvHours>0)mLv[ei][e.lv]=(mLv[ei][e.lv]||0)+e.lvHours;});
+      const hasMiddle=empDay.some(e=>e.outLeave);
+      const rowCount=hasMiddle?4:2;
+      const timeLabels=hasMiddle?['上班時間','外出時間','返回時間','下班時間']:['上班時間','下班時間'];
+      const rowBg=day%2===0?C.AL:C.WH;
 
-      ws.mergeCells(`A${curRow}:I${curRow}`);
-      ws.getCell(`A${curRow}`).value=`※ 彈性上下班（±${flex}分鐘），午休1小時，每日實際工時8小時；中途請假另有外出/返回打卡`;
-      ws.getCell(`A${curRow}`).font={name:'Arial',size:9,color:{argb:'FF808080'},italic:true};
-      ws.getCell(`A${curRow}`).alignment=lft;ws.getRow(curRow).height=15;curRow++;
+      ws.mergeCells(curRow,1,curRow+rowCount-1,1);
+      sc(ws.getCell(curRow,1),{font:{size:9},fill:rowBg});
+      ws.getCell(curRow,1).value=`${year}/${String(month+1).padStart(2,'0')}/${String(day).padStart(2,'0')}\n（${wdName}）`;
 
-      ws.getRow(curRow).height=26;
-      ['日期','星期','上班打卡','外出打卡','返回打卡','下班打卡','假　　別','請假時數','備　　註'].forEach((h,i)=>{const c=ws.getCell(curRow,i+1);c.value=h;sc(c,{font:{bold:true,color:{argb:'FFFFFFFF'}},fill:C.H});});
-      curRow++;
-
-      const mLv={};
-      for(let day=1;day<=dI;day++){
-        const d=new Date(year,month,day);ws.getRow(curRow).height=18;
-        const dk=attDK(d),holiday=ATT_HOLIDAYS[dk]||'',weekend=d.getDay()===0||d.getDay()===6,leaves=emp.leaveMap[dk]||[],isOff=weekend||!!holiday;
-        let inT='－',outLeave='',inReturn='',outT='－',lv='',h=0,note='',bg;
-        if(isOff){lv=holiday||'';bg=holiday?C.HO:C.WE;}
-        else{const p=attCP(d,leaves,wIn,wOut,flex);inT=p.inT;outLeave=p.outLeave;inReturn=p.inReturn;outT=p.outT;lv=p.lv;h=p.h;note=p.note;bg=h>0?C.LV:(day%2===0?C.AL:C.WH);if(h>0)leaves.forEach(l=>{mLv[l.type]=(mLv[l.type]||0)+l.hours;});}
-        [`${year}/${String(month+1).padStart(2,'0')}/${String(day).padStart(2,'0')}`,`(${WD[d.getDay()===0?6:d.getDay()-1]})`,inT,outLeave,inReturn,outT,lv,h?`${h.toFixed(1)}h`:'',note].forEach((v,ci)=>{const c=ws.getCell(curRow,ci+1);c.value=v;sc(c,{font:{color:{argb:weekend?'FFC00000':'FF000000'}},fill:bg});});
-        curRow++;
+      for(let r=0;r<rowCount;r++){
+        ws.getRow(curRow+r).height=18;
+        sc(ws.getCell(curRow+r,2),{font:{size:9},fill:rowBg});
+        ws.getCell(curRow+r,2).value=timeLabels[r];
+        empDay.forEach((e,ei)=>{
+          let val='';
+          if(r===0)val=e.inCell;
+          else if(r===rowCount-1)val=e.outCell;
+          else if(r===1&&hasMiddle)val=e.outLeave||'';
+          else if(r===2&&hasMiddle)val=e.inReturn||'';
+          const isLvCell=val&&!/^\d{2}:\d{2}$/.test(val);
+          sc(ws.getCell(curRow+r,3+ei),{fill:isLvCell?C.LV:rowBg});
+          ws.getCell(curRow+r,3+ei).value=val;
+        });
+        sc(ws.getCell(curRow+r,NC),{fill:rowBg});
       }
-
-      ws.getRow(curRow).height=22;
-      ws.mergeCells(`A${curRow}:B${curRow}`);sc(ws.getCell(`A${curRow}`),{font:{bold:true},fill:C.ST});ws.getCell(`A${curRow}`).value='本月合計';
-      ws.mergeCells(`C${curRow}:I${curRow}`);
-      const st=Object.keys(mLv).length>0?Object.entries(mLv).map(([k,v])=>`${k}：${v.toFixed(1)}h`).join('　'):'無請假';
-      sc(ws.getCell(`C${curRow}`),{font:{bold:true},fill:C.ST,align:lft});ws.getCell(`C${curRow}`).value=st;curRow++;
-
-      ws.mergeCells(`A${curRow}:I${curRow}`);
-      ws.getCell(`A${curRow}`).value='圖例：  黃底 = 請假日　　藍底 = 例假日（六/日）　　橘底 = 國定假日';
-      ws.getCell(`A${curRow}`).font={name:'Arial',size:9,color:{argb:'FF808080'},italic:true};
-      ws.getCell(`A${curRow}`).alignment=lft;curRow+=2;
-
-      ws.getRow(curRow).height=22;ws.mergeCells(`A${curRow}:I${curRow}`);
-      sc(ws.getCell(`A${curRow}`),{font:{size:11,bold:true,color:{argb:'FF1F4E79'}},fill:C.SG,align:lft});
-      ws.getCell(`A${curRow}`).value=`▌ 員工出勤確認簽名（${year}年${month+1}月）`;curRow++;
-
-      ws.getRow(curRow).height=20;
-      [['A','A','員工姓名'],['B','E','員工簽名'],['F','G','確認日期'],['H','H','主管確認'],['I','I','主管日期']].forEach(([s,e,v])=>{ws.mergeCells(`${s}${curRow}:${e}${curRow}`);sc(ws.getCell(`${s}${curRow}`),{font:{bold:true},fill:C.SG});ws.getCell(`${s}${curRow}`).value=v;});curRow++;
-
-      ws.getRow(curRow).height=45;
-      ws.getCell(`A${curRow}`).value=emp.name;sc(ws.getCell(`A${curRow}`),{fill:C.SI});
-      [['B','E'],['F','G'],['H','H'],['I','I']].forEach(([s,e])=>{ws.mergeCells(`${s}${curRow}:${e}${curRow}`);sc(ws.getCell(`${s}${curRow}`),{fill:C.SI});});curRow++;
-
-      ws.mergeCells(`A${curRow}:I${curRow}`);
-      ws.getCell(`A${curRow}`).value='※ 員工核對本月出勤資料無誤後親筆簽名，主管複核存檔備查。';
-      ws.getCell(`A${curRow}`).font={name:'Arial',size:9,color:{argb:'FF808080'},italic:true};
-      ws.getCell(`A${curRow}`).alignment=lft;curRow++;
+      curRow+=rowCount;
     }
 
-    ws.views=[{state:'frozen',xSplit:0,ySplit:isMulti?1:4,activeCell:isMulti?'A2':'A5',showGridLines:false}];
+    // 本月合計
+    ws.getRow(curRow).height=22;
+    ws.mergeCells(curRow,1,curRow,2);
+    sc(ws.getCell(curRow,1),{font:{bold:true},fill:C.ST});ws.getCell(curRow,1).value='本月合計';
+    empList.forEach((_,ei)=>{
+      const s=Object.entries(mLv[ei]).length?Object.entries(mLv[ei]).map(([k,v])=>`${k}：${v.toFixed(1)}h`).join('\n'):'無請假';
+      sc(ws.getCell(curRow,3+ei),{font:{size:9},fill:C.ST});ws.getCell(curRow,3+ei).value=s;
+    });
+    sc(ws.getCell(curRow,NC),{fill:C.ST});curRow++;
+
+    // 簽名列
+    ws.getRow(curRow).height=50;
+    ws.mergeCells(curRow,1,curRow,2);
+    sc(ws.getCell(curRow,1),{font:{bold:true,size:11},fill:C.SG});ws.getCell(curRow,1).value='簽　名';
+    empList.forEach((_,ei)=>{sc(ws.getCell(curRow,3+ei),{fill:C.SG});});
+    sc(ws.getCell(curRow,NC),{fill:C.SG});
   }
 
   bar.style.width='100%';lbl.textContent='寫入檔案中...';await new Promise(r=>setTimeout(r,50));
-
   const buffer=await workbook.xlsx.writeBuffer();
   const blob=new Blob([buffer],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');a.href=url;
-  const empNamePart=isMulti?`共${empList.length}人`:empList[0].name.split(' ')[0];
+  const empNamePart=empList.length>1?`共${empList.length}人`:empList[0].name.split(' ')[0];
   a.download=`${oName}_${empNamePart}_${months[0][0]}-${String(months[0][1]+1).padStart(2,'0')}至${months[months.length-1][0]}-${String(months[months.length-1][1]+1).padStart(2,'0')}.xlsx`;
   document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
 
   prog.style.display='none';
   document.getElementById('attResult').style.display='block';
-  const empNames=isMulti?`（${empList.map(e=>e.name.split(' ')[0]).join('、')}）`:'';
-  document.getElementById('attResultText').textContent=`共產生 ${months.length} 個月份工作表${empNames}（${months[0][0]}年${months[0][1]+1}月 ～ ${months[months.length-1][0]}年${months[months.length-1][1]+1}月）`;
+  document.getElementById('attResultText').textContent=`共產生 ${months.length} 個月份工作表（${months[0][0]}年${months[0][1]+1}月 ～ ${months[months.length-1][0]}年${months[months.length-1][1]+1}月）`;
   btn.disabled=false;
 }
 </script>
