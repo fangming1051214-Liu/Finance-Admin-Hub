@@ -129,7 +129,7 @@ a.nav-item { align-items: center; }
     </div>
     <div class="sidebar-section">
       <div class="sidebar-label">財務工具</div>
-      <a class="nav-item" id="nav-chb" href="#" onclick="event.preventDefault();showChbPage()"><span class="icon">🏦</span> CHB 對帳填寫 <span class="badge">核心</span></a>
+      <a class="nav-item" id="nav-chb" href="#" href="#page-chb"><span class="icon">🏦</span> CHB 對帳填寫 <span class="badge">核心</span></a>
     </div>
     <hr class="sidebar-divider">
     <div class="sidebar-section">
@@ -154,7 +154,7 @@ a.nav-item { align-items: center; }
       <div class="card">
         <div class="card-title"><span class="dot"></span> 快速工具</div>
         <div class="tools-grid">
-          <a class="tool-card" href="#" onclick="event.preventDefault();showChbPage()" style="text-decoration:none;">
+          <a class="tool-card" href="#" href="#page-chb" style="text-decoration:none;">
             <div class="tool-icon">🏦</div><div class="tool-name">CHB 對帳填寫</div>
             <div class="tool-desc">上傳 CHB*.xlsx，自動比對後台發票、填入採購單號與憑證號碼</div>
             <span class="tool-badge">核心功能</span>
@@ -251,6 +251,8 @@ a.nav-item { align-items: center; }
               <option value="60">±60 分鐘</option>
             </select>
           </div>
+          <div class="att-field"><label>起始月份</label><input type="month" id="attStartMonth" placeholder="自動偵測"></div>
+          <div class="att-field"><label>結束月份</label><input type="month" id="attEndMonth" placeholder="自動偵測"></div>
           <div class="att-field"><label>輸出檔名前綴</label><input type="text" id="attOutName" value="出勤打卡表單"></div>
         </div>
       </div>
@@ -304,41 +306,33 @@ a.nav-item { align-items: center; }
 
 <script src="app.js"></script>
 
-<!-- CHB 密碼保護 -->
-<div id="pwOverlay" style="position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:99999;display:none;align-items:center;justify-content:center;">
-  <div style="background:#1a2235;border:1px solid #2a3a55;border-radius:16px;padding:40px 36px;width:360px;text-align:center;">
-    <div style="font-size:36px;margin-bottom:12px;">🔒</div>
-    <div style="font-size:18px;font-weight:bold;color:#e8edf5;margin-bottom:6px;">CHB 彰銀對帳工具</div>
-    <div style="font-size:13px;color:#8899aa;margin-bottom:24px;">此工具需要密碼才能使用</div>
-    <input id="pwInput" type="password" placeholder="輸入密碼"
-      style="width:100%;padding:11px 14px;background:#212d42;border:1px solid #2a3a55;border-radius:8px;color:#e8edf5;font-size:15px;font-family:inherit;outline:none;margin-bottom:12px;"
-      onkeydown="if(event.key==='Enter')checkPw()">
-    <div id="pwError" style="color:#e74c3c;font-size:13px;margin-bottom:10px;display:none;">密碼錯誤，請重新輸入</div>
-    <button onclick="checkPw()" style="width:100%;padding:12px;background:#4a7fd4;color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:bold;cursor:pointer;font-family:inherit;">確認</button>
-    <button onclick="cancelPw()" style="width:100%;padding:10px;margin-top:8px;background:transparent;color:#8899aa;border:1px solid #2a3a55;border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit;">取消</button>
-  </div>
-</div>
 
 <script>
-// ── CHB 密碼保護 ──
-(function(){
-  var HASH='8a67d92fc49880d2cda32940deabc0244d7884fe7b1ffaa82d300cf0cfe72b24',KEY='chb_auth';
-  window.showChbPage=function(){
-    if(sessionStorage.getItem(KEY)===HASH){window.location.hash='#page-chb';}
-    else{document.getElementById('pwOverlay').style.display='flex';document.getElementById('pwInput').value='';document.getElementById('pwError').style.display='none';setTimeout(()=>document.getElementById('pwInput').focus(),100);}
-  };
-  window.cancelPw=function(){document.getElementById('pwOverlay').style.display='none';window.location.hash='#page-home';};
-  window.checkPw=async function(){
-    var val=document.getElementById('pwInput').value;
-    var buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(val));
-    var hex=Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
-    if(hex===HASH){sessionStorage.setItem(KEY,HASH);document.getElementById('pwOverlay').style.display='none';window.location.hash='#page-chb';}
-    else{document.getElementById('pwError').style.display='block';document.getElementById('pwInput').value='';document.getElementById('pwInput').focus();}
-  };
-})();
 
 // ── 出勤表產生器 ──
-const ATT_HOLIDAYS={'2023-12-31':'元旦補假','2024-01-01':'元旦','2024-02-08':'除夕','2024-02-09':'春節','2024-02-10':'春節','2024-02-11':'春節','2024-02-12':'春節補假','2024-02-13':'春節補假','2024-02-14':'春節補假','2024-04-04':'兒童節','2024-04-05':'清明節','2024-05-01':'勞動節','2024-06-10':'端午節','2024-09-17':'中秋節','2024-10-10':'國慶日','2025-01-01':'元旦','2025-01-27':'除夕','2025-01-28':'春節','2025-01-29':'春節','2025-01-30':'春節','2025-01-31':'春節補假','2025-02-28':'和平紀念日','2025-04-03':'兒童節/清明補假','2025-04-04':'兒童節','2025-05-01':'勞動節','2025-05-30':'端午節補假','2025-06-02':'端午節','2025-10-06':'中秋節','2025-10-10':'國慶日','2026-01-01':'元旦','2026-02-16':'除夕','2026-02-17':'春節','2026-02-18':'春節','2026-02-19':'春節','2026-02-20':'春節補假','2026-02-28':'和平紀念日','2026-04-03':'兒童節','2026-04-04':'清明節','2026-05-01':'勞動節'};
+const ATT_HOLIDAYS={};
+const ATT_HLD_DONE=new Set();
+async function attEnsureHolidays(years){
+  const todo=years.filter(y=>!ATT_HLD_DONE.has(y));
+  if(!todo.length)return;
+  await Promise.all(todo.map(async y=>{
+    ATT_HLD_DONE.add(y);
+    try{
+      const r=await fetch(`https://cdn.jsdelivr.net/gh/ruyut/TaiwanCalendar/data/${y}.json`);
+      if(!r.ok)throw 0;
+      const data=await r.json();
+      const skip=new Set(['星期六','星期日']);
+      data.forEach(item=>{
+        if(item.isHoliday&&item.description&&!skip.has(item.description)){
+          const d=String(item.date);
+          ATT_HOLIDAYS[`${d.slice(0,4)}-${d.slice(4,6)}-${d.slice(6,8)}`]=item.description;
+        }
+      });
+    }catch(e){console.warn('假日資料載入失敗 '+y,e);}
+    // 勞動節不在人事行政局資料內，手動補入
+    ATT_HOLIDAYS[`${y}-05-01`]=ATT_HOLIDAYS[`${y}-05-01`]||'勞動節';
+  }));
+}
 const WD=['一','二','三','四','五','六','日'];
 let attEmployees={};
 
@@ -384,11 +378,12 @@ function attLoadFile(file){
       const tyi=idx['假別']??5,dti=idx['歸屬日']??6,sti=idx['開始時間']??7,eti=idx['結束時間']??8,hi=idx['總時數']??9;
       attEmployees={};
       for(let r=1;r<rows.length;r++){
-        const row=rows[r];if(!row||!row[dti])continue;
+        const row=rows[r];if(!row)continue;
         const empName=String(row[ni]||'').trim();if(!empName)continue;
         const empId=String(row[ii]||'').trim(),empDept=String(row[di]||'').trim(),empTitle=String(row[ti]||'').trim();
         const ekey=empId||empName;
         if(!attEmployees[ekey])attEmployees[ekey]={name:empName,id:empId,dept:empDept,title:empTitle,leaveMap:{}};
+        if(!row[dti])continue;
         const ds=String(row[dti]).trim();let d;
         if(ds.includes('-'))d=new Date(ds);
         else if(ds.includes('/')){const[y,m,day]=ds.split('/');d=new Date(parseInt(y),parseInt(m)-1,parseInt(day));}
@@ -413,6 +408,15 @@ function attLoadFile(file){
         document.getElementById('attEmpDept').value=empList[0].dept;
         document.getElementById('attEmpTitle').value='';
       }
+      // Auto-fill month range from leave dates
+      const allDK=[];empList.forEach(e=>Object.keys(e.leaveMap).forEach(k=>allDK.push(new Date(k))));
+      const vd=allDK.filter(d=>!isNaN(d));
+      if(vd.length){
+        const mn=new Date(Math.min(...vd)),mx=new Date(Math.max(...vd));
+        const fmt=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+        if(!document.getElementById('attStartMonth').value)document.getElementById('attStartMonth').value=fmt(mn);
+        if(!document.getElementById('attEndMonth').value)document.getElementById('attEndMonth').value=fmt(mx);
+      }
       document.getElementById('attGenBtn').disabled=false;
       document.getElementById('attResult').style.display='none';
     }catch(err){alert('讀取失敗：'+err.message);}
@@ -435,14 +439,27 @@ async function attGenerate(){
   const lbl=document.getElementById('attProgLabel');
   prog.style.display='block';document.getElementById('attResult').style.display='none';
 
-  const allDates=[];
-  empList.forEach(emp=>Object.keys(emp.leaveMap).forEach(k=>allDates.push(new Date(k))));
-  const validDates=allDates.filter(d=>!isNaN(d));
-  if(!validDates.length){alert('找不到有效請假資料');btn.disabled=false;return;}
-  const minD=new Date(Math.min(...validDates)),maxD=new Date(Math.max(...validDates));
-  const months=[];let y=minD.getFullYear(),m=minD.getMonth();
-  const ey=maxD.getFullYear(),em2=maxD.getMonth();
-  while(y<ey||(y===ey&&m<=em2)){months.push([y,m]);m++;if(m>11){m=0;y++;}}
+  const smVal=document.getElementById('attStartMonth').value;
+  const emVal=document.getElementById('attEndMonth').value;
+  let startY,startM,endY,endM;
+  if(smVal&&emVal){
+    [startY,startM]=[parseInt(smVal.split('-')[0]),parseInt(smVal.split('-')[1])-1];
+    [endY,endM]=[parseInt(emVal.split('-')[0]),parseInt(emVal.split('-')[1])-1];
+  }else{
+    const allDates=[];
+    empList.forEach(emp=>Object.keys(emp.leaveMap).forEach(k=>allDates.push(new Date(k))));
+    const validDates=allDates.filter(d=>!isNaN(d));
+    if(!validDates.length){alert('請設定起始/結束月份，或確認請假明細包含日期資料');btn.disabled=false;return;}
+    const minD=new Date(Math.min(...validDates)),maxD=new Date(Math.max(...validDates));
+    startY=minD.getFullYear();startM=minD.getMonth();endY=maxD.getFullYear();endM=maxD.getMonth();
+  }
+  const months=[];let y=startY,m=startM;
+  while(y<endY||(y===endY&&m<=endM)){months.push([y,m]);m++;if(m>11){m=0;y++;}}
+
+  // 載入所有需要的年份假日
+  const yearsNeeded=[...new Set(months.map(([y])=>y))];
+  lbl.textContent='載入假日資料...';
+  await attEnsureHolidays(yearsNeeded);
 
   const C={H:{type:'pattern',pattern:'solid',fgColor:{argb:'FF1F4E79'}},TL:{type:'pattern',pattern:'solid',fgColor:{argb:'FFDEEAF1'}},WE:{type:'pattern',pattern:'solid',fgColor:{argb:'FFD9E1F2'}},LV:{type:'pattern',pattern:'solid',fgColor:{argb:'FFFFE699'}},HO:{type:'pattern',pattern:'solid',fgColor:{argb:'FFF4B942'}},ST:{type:'pattern',pattern:'solid',fgColor:{argb:'FFE2EFDA'}},SG:{type:'pattern',pattern:'solid',fgColor:{argb:'FFFFF2CC'}},AL:{type:'pattern',pattern:'solid',fgColor:{argb:'FFF5F9FF'}},WH:{type:'pattern',pattern:'solid',fgColor:{argb:'FFFFFFFF'}},SI:{type:'pattern',pattern:'solid',fgColor:{argb:'FFFFFDF0'}}};
   const tb={top:{style:'thin',color:{argb:'FFBFBFBF'}},left:{style:'thin',color:{argb:'FFBFBFBF'}},bottom:{style:'thin',color:{argb:'FFBFBFBF'}},right:{style:'thin',color:{argb:'FFBFBFBF'}}};
