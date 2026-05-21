@@ -475,7 +475,6 @@ async function attGenerate(){
   const C={H:{type:'pattern',pattern:'solid',fgColor:{argb:'FF1F4E79'}},TL:{type:'pattern',pattern:'solid',fgColor:{argb:'FFDEEAF1'}},WE:{type:'pattern',pattern:'solid',fgColor:{argb:'FFD9E1F2'}},LV:{type:'pattern',pattern:'solid',fgColor:{argb:'FFFFE699'}},HO:{type:'pattern',pattern:'solid',fgColor:{argb:'FFF4B942'}},ST:{type:'pattern',pattern:'solid',fgColor:{argb:'FFE2EFDA'}},SG:{type:'pattern',pattern:'solid',fgColor:{argb:'FFFFF2CC'}},AL:{type:'pattern',pattern:'solid',fgColor:{argb:'FFF5F9FF'}},WH:{type:'pattern',pattern:'solid',fgColor:{argb:'FFFFFFFF'}}};
   const tb={top:{style:'thin',color:{argb:'FFBFBFBF'}},left:{style:'thin',color:{argb:'FFBFBFBF'}},bottom:{style:'thin',color:{argb:'FFBFBFBF'}},right:{style:'thin',color:{argb:'FFBFBFBF'}}};
   const ctr={horizontal:'center',vertical:'middle',wrapText:true},lft={horizontal:'left',vertical:'middle'};
-  const tb={top:{style:'thin',color:{argb:'FFBFBFBF'}},left:{style:'thin',color:{argb:'FFBFBFBF'}},bottom:{style:'thin',color:{argb:'FFBFBFBF'}},right:{style:'thin',color:{argb:'FFBFBFBF'}}};
   function sc(cell,{font={},fill=null,align=ctr}={}){cell.font={name:'Arial',size:10,...font};if(fill)cell.fill=fill;cell.alignment=align;cell.border=tb;}
 
   const NC=2+empList.length+1; // 日期+時間+員工…+備註
