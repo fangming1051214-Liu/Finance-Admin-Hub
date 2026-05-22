@@ -362,14 +362,11 @@ function attCP(d,leaves,wIn,wOut,flex){
 // 欄位字母（支援 AA/AB…）
 function attCL(n){if(n<=26)return String.fromCharCode(64+n);return String.fromCharCode(63+Math.ceil(n/26))+String.fromCharCode(64+((n-1)%26+1));}
 
-// 單日單員工的 cell 顯示資料
+// 單日單員工的 cell 顯示資料（時間格永遠顯示時間，請假另一列）
 function getEmpDayData(d,leaves,wIn,wOut,flex){
   const p=attCP(d,leaves,wIn,wOut,flex);
-  if(p.h>=8)return{inCell:p.lv,outLeave:'',inReturn:'',outCell:p.lv,lv:p.lv,lvHours:p.h};
-  if(p.note.startsWith('上午'))return{inCell:p.lv,outLeave:'',inReturn:'',outCell:p.outT,lv:p.lv,lvHours:p.h};
-  if(p.note.startsWith('下午'))return{inCell:p.inT,outLeave:'',inReturn:'',outCell:p.lv,lv:p.lv,lvHours:p.h};
-  if(p.note.startsWith('中途'))return{inCell:p.inT,outLeave:p.outLeave,inReturn:p.inReturn,outCell:p.outT,lv:p.lv,lvHours:p.h};
-  return{inCell:p.inT,outLeave:'',inReturn:'',outCell:p.outT,lv:'',lvHours:0};
+  const lvCell=p.h>0?`${p.lv} ${p.h.toFixed(1)}h`:'';
+  return{inCell:p.inT,outLeave:p.outLeave,inReturn:p.inReturn,outCell:p.outT,lvCell,lv:p.lv,lvHours:p.h};
 }
 
 const attDZ=document.getElementById('attDropZone');
@@ -525,8 +522,9 @@ async function attGenerate(){
       const empDay=empList.map(emp=>getEmpDayData(d,emp.leaveMap[dk]||[],wIn,wOut,flex));
       empDay.forEach((e,ei)=>{if(e.lvHours>0)mLv[ei][e.lv]=(mLv[ei][e.lv]||0)+e.lvHours;});
       const hasMiddle=empDay.some(e=>e.outLeave);
-      const rowCount=hasMiddle?4:2;
-      const timeLabels=hasMiddle?['上班時間','外出時間','返回時間','下班時間']:['上班時間','下班時間'];
+      // 固定列結構：上班/[外出/返回/]下班/請假
+      const rowCount=hasMiddle?5:3;
+      const timeLabels=hasMiddle?['上班時間','外出時間','返回時間','下班時間','請　假']:['上班時間','下班時間','請　假'];
       const rowBg=day%2===0?C.AL:C.WH;
 
       ws.mergeCells(curRow,1,curRow+rowCount-1,1);
@@ -534,17 +532,20 @@ async function attGenerate(){
       ws.getCell(curRow,1).value=`${year}/${String(month+1).padStart(2,'0')}/${String(day).padStart(2,'0')}\n（${wdName}）`;
 
       for(let r=0;r<rowCount;r++){
-        ws.getRow(curRow+r).height=18;
+        const isLvRow=r===rowCount-1; // 最後一列是請假列
+        ws.getRow(curRow+r).height=isLvRow?16:18;
         sc(ws.getCell(curRow+r,2),{font:{size:9},fill:rowBg});
         ws.getCell(curRow+r,2).value=timeLabels[r];
         empDay.forEach((e,ei)=>{
           let val='';
-          if(r===0)val=e.inCell;
-          else if(r===rowCount-1)val=e.outCell;
-          else if(r===1&&hasMiddle)val=e.outLeave||'';
-          else if(r===2&&hasMiddle)val=e.inReturn||'';
-          const isLvCell=val&&!/^\d{2}:\d{2}$/.test(val);
-          sc(ws.getCell(curRow+r,3+ei),{fill:isLvCell?C.LV:rowBg});
+          if(isLvRow)val=e.lvCell||'';
+          else if(r===0)val=e.inCell;
+          else if(!hasMiddle&&r===1)val=e.outCell;
+          else if(hasMiddle&&r===1)val=e.outLeave||'';
+          else if(hasMiddle&&r===2)val=e.inReturn||'';
+          else if(hasMiddle&&r===3)val=e.outCell;
+          const useLvFill=isLvRow&&!!val;
+          sc(ws.getCell(curRow+r,3+ei),{fill:useLvFill?C.LV:rowBg,font:{size:useLvFill?9:10}});
           ws.getCell(curRow+r,3+ei).value=val;
         });
         sc(ws.getCell(curRow+r,NC),{fill:rowBg});
