@@ -340,32 +340,39 @@ function attDK(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2
 function attAM(hhmm,min){const[h,m]=hhmm.split(':').map(Number),t=h*60+m+Math.round(min);return `${String(Math.floor(t/60)).padStart(2,'0')}:${String(t%60).padStart(2,'0')}`;}
 function attRO(seed,flex){let h=seed|0;h=Math.imul(h^(h>>>16),0x45d9f3b);h=Math.imul(h^(h>>>16),0x45d9f3b);h^=h>>>16;const a=(h>>>0)/4294967296;let h2=(seed+1234567)|0;h2=Math.imul(h2^(h2>>>16),0x45d9f3b);h2=Math.imul(h2^(h2>>>16),0x45d9f3b);h2^=h2>>>16;const b=(h2>>>0)/4294967296;const g=Math.sqrt(-2*Math.log(Math.max(a,1e-10)))*Math.cos(2*Math.PI*b);return Math.max(-flex,Math.min(flex,Math.round(g*18+5)));}
 
-function attCP(d,leaves,wIn,wOut,flex){
-  const s=d.getFullYear()*10000+(d.getMonth()+1)*100+d.getDate();
-  if(!leaves||!leaves.length){const o=attRO(s,flex),i=attAM(wIn,o);return{inT:i,outLeave:'',inReturn:'',outT:attAM(i,9*60),lv:'',h:0,note:''};}
+function attCP(d,leaves,wIn,wOut,flex,empIdx){
+  const base=d.getFullYear()*10000+(d.getMonth()+1)*100+d.getDate();
+  const es=(empIdx||0)*997531;          // 每位員工不同的偏移量
+  const si=base+es;                     // 上班 seed
+  const so=base*3+es+777777;            // 下班 seed（獨立，避免與上班相同）
+  if(!leaves||!leaves.length){const o=attRO(si,flex),i=attAM(wIn,o);return{inT:i,outLeave:'',inReturn:'',outT:attAM(i,9*60+attRO(so,flex)),lv:'',h:0,lvTime:'',note:''};}
   const tot=leaves.reduce((a,b)=>a+b.hours,0);
   const lv=[...new Set(leaves.map(l=>l.type))].join('/');
-  if(tot>=8)return{inT:'－',outLeave:'',inReturn:'',outT:'－',lv,h:tot,note:'全天請假'};
+  if(tot>=8)return{inT:'－',outLeave:'',inReturn:'',outT:'－',lv,h:tot,lvTime:'全天',note:'全天請假'};
   const earl=leaves.reduce((a,b)=>a.start<b.start?a:b);
   const late=leaves.reduce((a,b)=>a.end>b.end?a:b);
   const sh=earl.start.getHours(),sm=earl.start.getMinutes(),eh=late.end.getHours(),em=late.end.getMinutes();
+  const fmtT=(h,m)=>`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+  const lvTime=`${fmtT(sh,sm)}~${fmtT(eh,em)}`;
   const rm=Math.round((8-tot)*60);
-  if(sh===9&&sm===0){const i=`${String(eh).padStart(2,'0')}:${String(em).padStart(2,'0')}`;return{inT:i,outLeave:'',inReturn:'',outT:attAM(i,rm+(eh>=13?0:60)),lv,h:tot,note:`上午${lv}`};}
-  if(eh===18&&em===0){const inT=attAM(wIn,attRO(s,flex));const[inH,inM]=inT.split(':').map(Number),inMins=inH*60+inM;const workMins=Math.round((8-tot)*60);const needsLunch=inMins<13*60&&(inMins+workMins)>12*60;return{inT,outLeave:'',inReturn:'',outT:attAM(inT,workMins+(needsLunch?60:0)),lv,h:tot,note:`下午${lv}`};}
-  const inT=attAM(wIn,attRO(s,flex));const[inH,inM]=inT.split(':').map(Number),inMins=inH*60+inM;
-  const leaveDur=(eh*60+em)-(sh*60+sm),workMins=Math.round((8-tot)*60),needsLunch=inMins<12*60;
-  const outT=attAM(inT,workMins+leaveDur+(needsLunch?60:0));
-  const lvSt=`${String(sh).padStart(2,'0')}:${String(sm).padStart(2,'0')}`,lvEd=`${String(eh).padStart(2,'0')}:${String(em).padStart(2,'0')}`;
-  return{inT,outLeave:attAM(lvSt,((s*77777)>>>0)%6),inReturn:attAM(lvEd,((s*99991)>>>0)%6),outT,lv,h:tot,note:`中途${lv}`};
+  if(sh===9&&sm===0){const i=fmtT(eh,em);return{inT:attAM(i,attRO(si,Math.min(flex,5))),outLeave:'',inReturn:'',outT:attAM(i,rm+(eh>=13?0:60)+attRO(so,flex)),lv,h:tot,lvTime,note:`上午${lv}`};}
+  if(eh===18&&em===0){const inT=attAM(wIn,attRO(si,flex));const[inH,inM]=inT.split(':').map(Number),inMins=inH*60+inM;const workMins=Math.round((8-tot)*60);const needsLunch=inMins<13*60&&(inMins+workMins)>12*60;return{inT,outLeave:'',inReturn:'',outT:attAM(inT,workMins+(needsLunch?60:0)+attRO(so,flex)),lv,h:tot,lvTime,note:`下午${lv}`};}
+  const inT=attAM(wIn,attRO(si,flex));const[inH,inM]=inT.split(':').map(Number),inMins=inH*60+inM;
+  const absenceMins=Math.round(tot*60),workMins=Math.round((8-tot)*60);
+  const leaveStartM=sh*60+sm,leaveEndM=eh*60+em;
+  const needsLunch=inMins<12*60&&!(leaveStartM<=12*60&&leaveEndM>=13*60);
+  const outT=attAM(inT,workMins+absenceMins+(needsLunch?60:0)+attRO(so,flex));
+  const lvSt=fmtT(sh,sm),lvEd=fmtT(eh,em);
+  return{inT,outLeave:attAM(lvSt,((base*77777+es)>>>0)%6),inReturn:attAM(lvEd,((base*99991+es)>>>0)%6),outT,lv,h:tot,lvTime,note:`中途${lv}`};
 }
 
 // 欄位字母（支援 AA/AB…）
 function attCL(n){if(n<=26)return String.fromCharCode(64+n);return String.fromCharCode(63+Math.ceil(n/26))+String.fromCharCode(64+((n-1)%26+1));}
 
 // 單日單員工的 cell 顯示資料（時間格永遠顯示時間，請假另一列）
-function getEmpDayData(d,leaves,wIn,wOut,flex){
-  const p=attCP(d,leaves,wIn,wOut,flex);
-  const lvCell=p.h>0?`${p.lv} ${p.h.toFixed(1)}h`:'';
+function getEmpDayData(d,leaves,wIn,wOut,flex,empIdx){
+  const p=attCP(d,leaves,wIn,wOut,flex,empIdx);
+  const lvCell=p.h>0?`${p.lv} ${p.h.toFixed(1)}h\n${p.lvTime}`:'';
   return{inCell:p.inT,outLeave:p.outLeave,inReturn:p.inReturn,outCell:p.outT,lvCell,lv:p.lv,lvHours:p.h};
 }
 
@@ -519,7 +526,7 @@ async function attGenerate(){
         curRow++;continue;
       }
 
-      const empDay=empList.map(emp=>getEmpDayData(d,emp.leaveMap[dk]||[],wIn,wOut,flex));
+      const empDay=empList.map((emp,ei)=>getEmpDayData(d,emp.leaveMap[dk]||[],wIn,wOut,flex,ei));
       empDay.forEach((e,ei)=>{if(e.lvHours>0)mLv[ei][e.lv]=(mLv[ei][e.lv]||0)+e.lvHours;});
       const hasMiddle=empDay.some(e=>e.outLeave);
       // 固定列結構：上班/[外出/返回/]下班/請假
@@ -533,7 +540,7 @@ async function attGenerate(){
 
       for(let r=0;r<rowCount;r++){
         const isLvRow=r===rowCount-1; // 最後一列是請假列
-        ws.getRow(curRow+r).height=isLvRow?16:18;
+        ws.getRow(curRow+r).height=isLvRow?26:18;
         sc(ws.getCell(curRow+r,2),{font:{size:9},fill:rowBg});
         ws.getCell(curRow+r,2).value=timeLabels[r];
         empDay.forEach((e,ei)=>{
