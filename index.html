@@ -355,7 +355,15 @@ function attCP(d,leaves,wIn,wOut,flex,empIdx){
   const fmtT=(h,m)=>`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
   const lvTime=`${fmtT(sh,sm)}~${fmtT(eh,em)}`;
   const rm=Math.round((8-tot)*60);
-  if(sh===9&&sm===0){const i=fmtT(eh,em);return{inT:attAM(i,attRO(si,Math.min(flex,5))),outLeave:'',inReturn:'',outT:attAM(i,rm+(eh>=13?0:60)+attRO(so,flex)),lv,h:tot,lvTime,note:`上午${lv}`};}
+  if(sh===9&&sm===0){
+    const leaveEndMins=eh*60+em;
+    // 若請假結束在午休期間（12:00~13:00），等午休結束後 13:00 才進公司
+    const effInMins=(leaveEndMins>=12*60&&leaveEndMins<=13*60)?13*60:leaveEndMins;
+    const effIn=fmtT(Math.floor(effInMins/60),effInMins%60);
+    const i=attAM(effIn,attRO(si,Math.min(flex,5)));
+    const needsLunch=effInMins<12*60; // 早於中午進公司才需要扣午休
+    return{inT:i,outLeave:'',inReturn:'',outT:attAM(i,rm+(needsLunch?60:0)+attRO(so,flex)),lv,h:tot,lvTime,note:`上午${lv}`};
+  }
   if(eh===18&&em===0){const inT=attAM(wIn,attRO(si,flex));const[inH,inM]=inT.split(':').map(Number),inMins=inH*60+inM;const workMins=Math.round((8-tot)*60);const needsLunch=inMins<13*60&&(inMins+workMins)>12*60;return{inT,outLeave:'',inReturn:'',outT:attAM(inT,workMins+(needsLunch?60:0)+attRO(so,flex)),lv,h:tot,lvTime,note:`下午${lv}`};}
   const inT=attAM(wIn,attRO(si,flex));const[inH,inM]=inT.split(':').map(Number),inMins=inH*60+inM;
   const absenceMins=Math.round(tot*60),workMins=Math.round((8-tot)*60);
