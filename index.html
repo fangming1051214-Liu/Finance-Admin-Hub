@@ -35,8 +35,10 @@ body { background: var(--bg); color: var(--text); font-family: 'Microsoft JhengH
 #page-home { display: block; }
 .page:target { display: block; }
 body:has(#page-chb:target) #page-home,
+body:has(#page-inv:target) #page-home,
 body:has(#page-calendar:target) #page-home,
 body:has(#page-docs:target) #page-home,
+body:has(#page-recordings:target) #page-home,
 body:has(#page-attendance:target) #page-home { display: none; }
 .page-title { font-size: 20px; font-weight: bold; margin-bottom: 6px; }
 .page-sub { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
@@ -109,6 +111,11 @@ a.nav-item { align-items: center; }
 .legend-row { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 12px; }
 .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
 .swatch { width: 14px; height: 14px; border-radius: 3px; flex-shrink: 0; }
+/* 錄音下載說明頁 */
+.rec-list { margin-top: 10px; line-height: 1.9; padding-left: 20px; }
+.rec-block code { background: var(--panel2); border: 1px solid var(--border); border-radius: 5px; padding: 1px 6px; font-size: 12px; color: var(--accent); }
+.btn-copy { margin-top: 4px; padding: 11px 18px; border: none; border-radius: 10px; background: var(--accent); color: #fff; font-size: 14px; font-family: inherit; font-weight: bold; cursor: pointer; transition: background 0.2s; }
+.btn-copy:hover { background: #3568b8; }
 </style>
 </head>
 <body>
@@ -130,6 +137,7 @@ a.nav-item { align-items: center; }
     <div class="sidebar-section">
       <div class="sidebar-label">財務工具</div>
       <a class="nav-item" id="nav-chb" href="#page-chb"><span class="icon">🏦</span> CHB 對帳填寫 <span class="badge">核心</span></a>
+      <a class="nav-item" id="nav-inv" href="#page-inv"><span class="icon">🧾</span> 久未開發票對帳</a>
     </div>
     <hr class="sidebar-divider">
     <div class="sidebar-section">
@@ -137,6 +145,11 @@ a.nav-item { align-items: center; }
       <a class="nav-item" id="nav-attendance" href="#page-attendance"><span class="icon">📋</span> 出勤表產生</a>
       <a class="nav-item" id="nav-calendar" href="#page-calendar"><span class="icon">📅</span> 行事曆</a>
       <a class="nav-item" id="nav-docs" href="#page-docs"><span class="icon">📁</span> 文件管理</a>
+    </div>
+    <hr class="sidebar-divider">
+    <div class="sidebar-section">
+      <div class="sidebar-label">通訊工具</div>
+      <a class="nav-item" id="nav-recordings" href="#page-recordings"><span class="icon">🎙️</span> 錄音下載 <span class="badge green">通訊</span></a>
     </div>
   </div>
 
@@ -159,6 +172,11 @@ a.nav-item { align-items: center; }
             <div class="tool-desc">上傳 CHB*.xlsx，自動比對後台發票、填入採購單號與憑證號碼</div>
             <span class="tool-badge">核心功能</span>
           </a>
+          <a class="tool-card" href="#page-inv" style="text-decoration:none;">
+            <div class="tool-icon">🧾</div><div class="tool-name">久未開發票對帳</div>
+            <div class="tool-desc">上傳追蹤檔，自動比對 Inv 與訂單明細，填入已開發票金額、最近開票時間、訂單到貨時間</div>
+            <span class="tool-badge">財務工具</span>
+          </a>
           <a class="tool-card" href="#page-attendance" style="text-decoration:none;">
             <div class="tool-icon">📋</div><div class="tool-name">出勤表產生</div>
             <div class="tool-desc">上傳請假紀錄，自動產生每月出勤打卡表單 Excel，含彈性打卡時間</div>
@@ -173,6 +191,11 @@ a.nav-item { align-items: center; }
             <div class="tool-icon">📁</div><div class="tool-name">文件管理</div>
             <div class="tool-desc">發票、報表、合約文件快速存取</div>
             <span class="tool-badge green">即將開放</span>
+          </a>
+          <a class="tool-card" href="#page-recordings" style="text-decoration:none;">
+            <div class="tool-icon">🎙️</div><div class="tool-name">錄音下載</div>
+            <div class="tool-desc">下載指定人員、指定日期的 3CX 通話錄音，自動命名並依姓名分類資料夾</div>
+            <span class="tool-badge green">通訊工具</span>
           </a>
         </div>
       </div>
@@ -215,6 +238,41 @@ a.nav-item { align-items: center; }
           <p>✦ <strong style="color:var(--text)">付款日期</strong>：民國日期轉西曆，精確日期優先，允許 ±2 天誤差</p>
           <p>✦ <strong style="color:var(--text)">金額</strong>：發票加總 + 匯費（0 或 15 元）= CHB 支出；支援多張發票組合搜尋</p>
           <p>✦ <strong style="color:var(--text)">留空條件</strong>：放款/授扣、個人名義、後台無對應發票、金額無法匹配</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 久未開發票對帳 -->
+    <div class="page" id="page-inv">
+      <div class="page-title">🧾 久未開發票對帳填寫</div>
+      <div class="page-sub">上傳追蹤檔，自動比對 Inv 與訂單明細，填入「後台_已開發票金額」「最近一次開立發票時間」「後台_訂單到貨時間」</div>
+      <div class="card">
+        <div class="card-title"><span class="dot"></span> 上傳檔案</div>
+        <div class="drop-zone" id="invDropZone" onclick="document.getElementById('invFileInput').click()">
+          <div class="dz-icon">📂</div>
+          <p>點擊或拖曳 <span>久未開發票*.xlsx</span> 到這裡</p>
+          <p style="font-size:12px;margin-top:6px;opacity:0.6">需包含 久未開發票、Inv、訂單明細 三個工作表</p>
+          <input type="file" id="invFileInput" accept=".xlsx" onchange="if(this.files[0]){invSetFile(this.files[0]);}">
+        </div>
+        <div class="file-tag" id="invFileTag">📄 <span id="invFileName"></span></div>
+        <button class="btn-run" id="invRunBtn" disabled onclick="invRun()">▶ 開始填寫</button>
+        <div class="prog-wrap" id="invProgWrap">
+          <div class="prog-label" id="invProgLabel">讀取中...</div>
+          <div class="prog-bar"><div class="prog-fill" id="invProgFill"></div></div>
+        </div>
+        <div class="result-box" id="invResultBox">
+          <div class="result-title" id="invResultTitle"></div>
+          <div class="result-stats" id="invResultStats"></div>
+          <button class="btn-download" id="invDlBtn" onclick="invDownload()">⬇ 下載填寫完成的 Excel</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="dot orange"></span> 填寫規則說明</div>
+        <div style="font-size:13px;color:var(--muted);line-height:1.8;">
+          <p>✦ <strong style="color:var(--text)">後台_已開發票金額</strong>：以訂單序號比對 Inv「對應訂單序號」，加總對應發票金額；找不到則留空</p>
+          <p>✦ <strong style="color:var(--text)">最近一次開立發票時間</strong>：取對應發票中最晚（最接近現在）的發票日期</p>
+          <p>✦ <strong style="color:var(--text)">後台_訂單到貨時間</strong>：比對訂單明細（排除「已簽收」），取最晚的「預計到貨時間」；若「交約日期」更晚則用交約日期</p>
+          <p>✦ <strong style="color:var(--text)">完全在瀏覽器執行</strong>，不上傳、不消耗任何額度</p>
         </div>
       </div>
     </div>
@@ -301,10 +359,227 @@ a.nav-item { align-items: center; }
       <div class="coming-soon"><div class="cs-icon">📁</div><h3>功能開發中</h3><p>未來可加入常用文件的快速連結與搜尋功能</p></div>
     </div>
 
+    <!-- 錄音下載 -->
+    <div class="page" id="page-recordings">
+      <div class="page-title">🎙️ 3CX 通話錄音下載</div>
+      <div class="page-sub">下載指定人員、指定日期的通話錄音，自動命名並依姓名分類資料夾，存到桌面 Claude\錄音</div>
+
+      <div class="card rec-block">
+        <div class="card-title"><span class="dot"></span> 使用方式</div>
+        <div style="font-size:13px;color:var(--muted);line-height:1.8;">
+          此工具由 Cowork 的「3cx-recording-download」技能執行。在 Cowork 對話輸入 <code>下載錄音</code> 即可啟動，依提示填入兩項：
+          <ul class="rec-list">
+            <li><strong style="color:var(--text)">姓名</strong>：可一次多位，用分號分隔，例如 <code>黃薰儀;曹嘉芸;謝芳洳</code></li>
+            <li><strong style="color:var(--text)">日期</strong>：上週 / 指定某一天（如 2026-06-05）/ 指定區間（如 2026-06-01 ~ 2026-06-07）</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="card rec-block">
+        <div class="card-title"><span class="dot orange"></span> 命名與分類規則</div>
+        <div style="font-size:13px;color:var(--muted);line-height:1.9;">
+          <p>檔名格式：<code>姓名_分機_日期_時間_電話號碼.wav</code></p>
+          <p>範例：<code>黃薰儀_307_0605_1430_062450777.wav</code></p>
+          <p style="margin-top:6px;">每位人員一個 <code>姓名_分機</code> 資料夾，全部放進桌面 <code>Claude\錄音</code>。</p>
+        </div>
+      </div>
+
+      <div class="card rec-block">
+        <div class="card-title"><span class="dot green"></span> 前置條件</div>
+        <div style="font-size:13px;color:var(--muted);line-height:1.9;">
+          <p>✦ 每次執行前需自行登入 <code>https://sciket.3cx.com.tw</code>（不會代輸入密碼）</p>
+          <p>✦ 下載前會先告知總筆數並等你確認</p>
+          <p>✦ 真正下載在 Cowork 觸發技能時執行，此頁為入口與說明</p>
+        </div>
+      </div>
+
+      <button class="btn-copy" id="copyRecCmd">📋 複製觸發指令「下載錄音」</button>
+      <script>
+        (function(){
+          var b=document.getElementById('copyRecCmd');
+          if(b) b.addEventListener('click',function(){
+            navigator.clipboard.writeText('下載錄音').then(function(){
+              b.textContent='✓ 已複製，到 Cowork 貼上即可';
+              setTimeout(function(){b.textContent='📋 複製觸發指令「下載錄音」';},2000);
+            });
+          });
+        })();
+      </script>
+    </div>
+
   </div>
 </div>
 
 <script src="app.js"></script>
+
+<!-- ── 久未開發票對帳填寫 ────────────────────────────────────────── -->
+<script>
+var invFile=null, invOut=null;
+
+function invSetFile(f){
+  invFile=f;
+  document.getElementById('invFileName').textContent=f.name;
+  document.getElementById('invFileTag').style.display='block';
+  document.getElementById('invRunBtn').disabled=false;
+  document.getElementById('invResultBox').style.display='none';
+  document.getElementById('invDlBtn').style.display='none';
+  invOut=null;
+}
+
+window.addEventListener('DOMContentLoaded',function(){
+  var dz=document.getElementById('invDropZone');
+  if(!dz) return;
+  dz.addEventListener('dragover',function(e){e.preventDefault();dz.classList.add('drag-over');});
+  dz.addEventListener('dragleave',function(){dz.classList.remove('drag-over');});
+  dz.addEventListener('drop',function(e){
+    e.preventDefault(); dz.classList.remove('drag-over');
+    if(e.dataTransfer.files[0]) invSetFile(e.dataTransfer.files[0]);
+  });
+});
+
+function invPad(n){ n=String(n); return n.length<2?'0'+n:n; }
+function invYmd(v){
+  if(v==null||v==='') return null;
+  if(v instanceof Date){ if(isNaN(v.getTime())) return null; return v.getFullYear()+'-'+invPad(v.getMonth()+1)+'-'+invPad(v.getDate()); }
+  var s=String(v).trim();
+  var m=s.match(/(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})/);
+  if(m) return m[1]+'-'+invPad(m[2])+'-'+invPad(m[3]);
+  return null;
+}
+function invFindCol(headerRow,names){
+  if(!headerRow) return -1;
+  var j,k,h;
+  for(j=0;j<headerRow.length;j++){
+    h=String(headerRow[j]==null?'':headerRow[j]).replace(/\s/g,'');
+    for(k=0;k<names.length;k++){ if(h===names[k]) return j; }
+  }
+  for(j=0;j<headerRow.length;j++){
+    h=String(headerRow[j]==null?'':headerRow[j]).replace(/\s/g,'');
+    for(k=0;k<names.length;k++){ if(h && h.indexOf(names[k])>=0) return j; }
+  }
+  return -1;
+}
+function invSleep(ms){ return new Promise(function(r){ setTimeout(r,ms); }); }
+function invSetP(pct,lbl){
+  document.getElementById('invProgFill').style.width=pct+'%';
+  document.getElementById('invProgLabel').textContent=lbl;
+}
+
+async function invRun(){
+  document.getElementById('invRunBtn').disabled=true;
+  document.getElementById('invProgWrap').style.display='block';
+  document.getElementById('invResultBox').style.display='none';
+  invOut=null;
+  try{
+    invSetP(10,'讀取 Excel 檔案...'); await invSleep(50);
+    var ab=await invFile.arrayBuffer();
+    var wb=XLSX.read(ab,{type:'array',cellDates:true});
+    var sn=wb.SheetNames;
+    var mainSN=sn.find(function(s){ return s.replace(/\s/g,'').indexOf('久未開發票')>=0; });
+    var invSN =sn.find(function(s){ return s.replace(/\s/g,'').toLowerCase()==='inv'; })
+            || sn.find(function(s){ return s.replace(/\s/g,'').toLowerCase().indexOf('inv')>=0; });
+    var odSN  =sn.find(function(s){ return s.indexOf('訂單明細')>=0; });
+    if(!mainSN||!invSN||!odSN) throw new Error('找不到必要工作表（久未開發票 / Inv / 訂單明細）。目前工作表：'+sn.join('、'));
+
+    invSetP(25,'解析工作表...'); await invSleep(50);
+    var mainAoa=XLSX.utils.sheet_to_json(wb.Sheets[mainSN],{header:1,defval:null});
+    var invAoa =XLSX.utils.sheet_to_json(wb.Sheets[invSN], {header:1,defval:null});
+    var odAoa  =XLSX.utils.sheet_to_json(wb.Sheets[odSN],  {header:1,defval:null});
+
+    var mh=mainAoa[0]||[];
+    var cOrder=invFindCol(mh,['訂單序號']);
+    var cN=invFindCol(mh,['後台_已開發票金額','後台已開發票金額']);
+    var cO=invFindCol(mh,['最近一次開立發票時間']);
+    var cP=invFindCol(mh,['後台_訂單到貨時間','後台訂單到貨時間']);
+    if(cOrder<0) cOrder=0;
+    if(cN<0||cO<0||cP<0) throw new Error('久未開發票工作表缺少欄位（後台_已開發票金額 / 最近一次開立發票時間 / 後台_訂單到貨時間）');
+
+    // ── 建立 Inv 索引：訂單序號 -> { 發票號碼: {date, amt} } ──
+    var ih=invAoa[0]||[];
+    var iNo=invFindCol(ih,['發票號碼']), iDate=invFindCol(ih,['發票日期']);
+    var iAmt=invFindCol(ih,['發票金額']), iOrder=invFindCol(ih,['對應訂單序號','訂單序號']);
+    var byOrder={};
+    for(var r=1;r<invAoa.length;r++){
+      var row=invAoa[r]; if(!row) continue;
+      var k=row[iOrder]; if(k==null||String(k).trim()==='') continue;
+      k=String(k).trim();
+      var no=String(row[iNo]==null?'':row[iNo]).trim() || ('__'+r);
+      if(!byOrder[k]) byOrder[k]={};
+      byOrder[k][no]={ date:invYmd(row[iDate]), amt:(parseFloat(String(row[iAmt]).replace(/,/g,''))||0) };
+    }
+
+    // ── 建立訂單明細索引：訂單序號 -> [到貨/交約日期]（排除已簽收）──
+    var oh=odAoa[0]||[];
+    var oId=invFindCol(oh,['訂單ID','訂單序號']), oStatus=invFindCol(oh,['狀態']);
+    var oQ=invFindCol(oh,['預計到貨時間']), oW=invFindCol(oh,['交約日期']);
+    var arr={};
+    for(var r=1;r<odAoa.length;r++){
+      var row=odAoa[r]; if(!row) continue;
+      var k=row[oId]; if(k==null||String(k).trim()==='') continue;
+      k=String(k).trim();
+      var st=String(row[oStatus]==null?'':row[oStatus]).trim();
+      if(st==='已簽收') continue;
+      if(!arr[k]) arr[k]=[];
+      var q=invYmd(row[oQ]); if(q) arr[k].push(q);
+      if(oW>=0){ var w=invYmd(row[oW]); if(w) arr[k].push(w); }
+    }
+
+    invSetP(60,'比對填寫中...'); await invSleep(50);
+    var ws=wb.Sheets[mainSN];
+    var colN=XLSX.utils.encode_col(cN), colO=XLSX.utils.encode_col(cO), colP=XLSX.utils.encode_col(cP);
+    var total=0, matched=0, blank=0;
+    for(var r=1;r<mainAoa.length;r++){
+      var row=mainAoa[r]; if(!row) continue;
+      var a=row[cOrder]; if(a==null||String(a).trim()==='') continue;
+      a=String(a).trim(); total++;
+      var er=r+1; // Excel 1-based 列號（含標題列）
+      var invs=byOrder[a];
+      if(invs){
+        var sum=0, dates=[];
+        for(var nk in invs){ sum+=invs[nk].amt; if(invs[nk].date) dates.push(invs[nk].date); }
+        ws[colN+er]={t:'n',v:sum};
+        if(dates.length){ dates.sort(); ws[colO+er]={t:'s',v:dates[dates.length-1]}; } else { delete ws[colO+er]; }
+        matched++;
+      } else {
+        delete ws[colN+er]; delete ws[colO+er]; blank++;
+      }
+      var qs=arr[a];
+      if(qs && qs.length){ qs.sort(); ws[colP+er]={t:'s',v:qs[qs.length-1]}; }
+      else { delete ws[colP+er]; }
+    }
+
+    invSetP(90,'產生檔案...'); await invSleep(50);
+    invOut=XLSX.write(wb,{bookType:'xlsx',type:'array'});
+    invSetP(100,'完成！'); await invSleep(150);
+
+    document.getElementById('invProgWrap').style.display='none';
+    var rb=document.getElementById('invResultBox'); rb.className='result-box ok'; rb.style.display='block';
+    document.getElementById('invResultTitle').textContent='✅ 填寫完成！';
+    document.getElementById('invResultStats').innerHTML=
+      '<div class="rs"><div class="rs-num" style="color:var(--accent)">'+total+'</div><div class="rs-lbl">訂單筆數</div></div>'+
+      '<div class="rs"><div class="rs-num" style="color:var(--accent2)">'+matched+'</div><div class="rs-lbl">有對應發票</div></div>'+
+      '<div class="rs"><div class="rs-num" style="color:var(--accent3)">'+blank+'</div><div class="rs-lbl">無對應(留空)</div></div>';
+    document.getElementById('invDlBtn').style.display='block';
+    if(typeof addActivity==='function') addActivity('green','久未開發票填寫完成：'+matched+'/'+total+' 筆有發票');
+  }catch(err){
+    document.getElementById('invProgWrap').style.display='none';
+    var rb=document.getElementById('invResultBox'); rb.className='result-box err'; rb.style.display='block';
+    document.getElementById('invResultTitle').textContent='❌ 錯誤：'+err.message;
+    document.getElementById('invResultStats').innerHTML='';
+    console.error(err);
+  }
+  document.getElementById('invRunBtn').disabled=false;
+}
+
+function invDownload(){
+  if(!invOut) return;
+  var base=(invFile&&invFile.name)?invFile.name.replace(/\.xlsx$/i,''):'久未開發票';
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([invOut],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}));
+  a.download=base+'_已填寫.xlsx';
+  a.click();
+}
+</script>
 
 
 <script>
